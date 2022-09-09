@@ -9,7 +9,8 @@
 // https://stackoverflow.com/questions/10901240/zeromq-how-to-access-tcp-message-in-c
 
 
-void PublisherThread(zmq::context_t* ctx) {
+void PublisherThread(zmq::context_t* ctx) 
+{
     //  Prepare publisher
     zmq::socket_t publisher(*ctx, zmq::socket_type::pub);
     
@@ -23,7 +24,8 @@ void PublisherThread(zmq::context_t* ctx) {
         std::cout << "Sending messages.." << std::endl;
         //  Write three messages, each with an envelope and content
         publisher.send(zmq::str_buffer("A"), zmq::send_flags::sndmore);
-        publisher.send(zmq::str_buffer("Message in A envelope"));
+        publisher.send(zmq::str_buffer("Message in A envelope"), zmq::send_flags::sndmore);
+        publisher.send(zmq::str_buffer("Another Message in A envelope"));
         publisher.send(zmq::str_buffer("B"), zmq::send_flags::sndmore);
         publisher.send(zmq::str_buffer("Message in B envelope"));
         publisher.send(zmq::str_buffer("C"), zmq::send_flags::sndmore);
@@ -32,7 +34,7 @@ void PublisherThread(zmq::context_t* ctx) {
     }
 }
 
-void SubscriberThread1(zmq::context_t* ctx) {
+int SubscriberThread1(zmq::context_t* ctx) {
     //  Prepare subscriber
     zmq::socket_t subscriber(*ctx, zmq::socket_type::sub);
     subscriber.connect("tcp://127.0.0.1:5555");
@@ -41,7 +43,8 @@ void SubscriberThread1(zmq::context_t* ctx) {
     subscriber.set(zmq::sockopt::subscribe, "A");
     subscriber.set(zmq::sockopt::subscribe, "B");
 
-    while (1) {
+    while (1) 
+    {
         // Receive all parts of the message
         std::vector<zmq::message_t> recv_msgs;
         zmq::recv_result_t result =
@@ -52,6 +55,8 @@ void SubscriberThread1(zmq::context_t* ctx) {
         std::cout << "Thread2: [" << recv_msgs[0].to_string() << "] "
             << recv_msgs[1].to_string() << std::endl;
     }
+
+    return 1;
 }
 
 void SubscriberThread2(zmq::context_t* ctx) {
@@ -62,7 +67,8 @@ void SubscriberThread2(zmq::context_t* ctx) {
     //  Thread3 opens ALL envelopes
     subscriber.set(zmq::sockopt::subscribe, "");
 
-    while (1) {
+    while (1) 
+    {
         // Receive all parts of the message
         std::vector<zmq::message_t> recv_msgs;
         zmq::recv_result_t result =
@@ -72,6 +78,7 @@ void SubscriberThread2(zmq::context_t* ctx) {
 
         std::cout << "Thread3: [" << recv_msgs[0].to_string() << "] "
             << recv_msgs[1].to_string() << std::endl;
+
     }
 }
 

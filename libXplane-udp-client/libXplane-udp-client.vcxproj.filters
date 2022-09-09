@@ -27,6 +27,9 @@
     <ClCompile Include="TestXPlaneUDPClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ClientManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="XPlaneBeaconListener.h">
@@ -36,6 +39,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="XPUtils.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientManager.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

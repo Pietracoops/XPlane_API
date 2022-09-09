@@ -105,7 +105,7 @@ void XPlaneBeaconListener::runListener() {
 	}
 	
 	/* set up socket */
-	sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	sock = (int)socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (sock < 0) {
 		printf("Failed. Error Code : %d", WSAGetLastError());
 		perror("socket");

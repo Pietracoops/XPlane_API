@@ -19,12 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ClientManager.cpp" />
     <ClCompile Include="TestXPlaneUDPClient.cpp" />
     <ClCompile Include="XPlaneBeaconListener.cpp" />
     <ClCompile Include="XPlaneUDPClient.cpp" />
     <ClCompile Include="XPUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ClientManager.h" />
     <ClInclude Include="XPlaneBeaconListener.h" />
     <ClInclude Include="XPlaneUDPClient.h" />
     <ClInclude Include="XPUtils.h" />
@@ -128,11 +130,15 @@
       <PreprocessorDefinitions>_WINSOCK_DEPRECATED_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalUsingDirectories>
+      </AdditionalUsingDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)libXplane-udp-client\libzmq-v142-x64-4_3_4;$(SolutionDir)libXplane-udp-client\cppzmq-4.8.1;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libzmq-v142-mt-4_3_4.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)libXplane-udp-client\libzmq-v142-x64-4_3_4;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

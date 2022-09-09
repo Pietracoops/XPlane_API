@@ -135,7 +135,7 @@ XPlaneUDPClient::XPlaneUDPClient(std::string _server, uint16_t _port,
 	}
 
 	// setup socket
-	sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	sock = (int)socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (sock < 0)
 	{
 		throw runtime_error("Unable to create UDP socket");
