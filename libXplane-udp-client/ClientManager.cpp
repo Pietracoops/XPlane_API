@@ -33,20 +33,28 @@ void receiverBeaconCallback(XPlaneBeaconListener::XPlaneServer server, bool exis
     found = true;
 }
 
-
-void attachToClient(zmq::context_t* ctx, std::string topic, int thread_number)
+std::string getDataRefFromMap(std::string dref)
 {
+    std::shared_lock lock(mutex_);
+    return dataRefValuesMap[dref];
+}
+
+void attachToClient(zmq::context_t* ctx, std::string topic, int thread_number, int port_number, XPlaneUDPClient* xp)
+{
+
+    std::string subscriber_connection_string = "tcp://127.0.0.1:" + std::to_string(port_number);
+    std::string publisher_connection_string = "tcp://127.0.0.1:" + std::to_string(port_number + 1);
 
     // Vector to hold all threads for each new client
     std::vector<std::future<void>> threads;
     
     //  Prepare our context and subscriber
     zmq::socket_t subscriber(*ctx, zmq::socket_type::sub);
-    subscriber.connect("tcp://127.0.0.1:5555");
+    subscriber.connect(subscriber_connection_string);
     
     // Prepare our publisher
     zmq::socket_t publisher(*ctx, zmq::socket_type::pub);
-    publisher.bind("tcp://127.0.0.1:5556");
+    publisher.bind(publisher_connection_string);
 
     //  Opens ALL envelopes
     subscriber.set(zmq::sockopt::subscribe, topic);
@@ -54,6 +62,7 @@ void attachToClient(zmq::context_t* ctx, std::string topic, int thread_number)
 
     while (running)
     {
+        //std::cout << "STARTING UP" << std::endl;
         // Receive all parts of the message
         std::vector<zmq::message_t> recv_msgs;
         zmq::recv_result_t  result = zmq::recv_multipart(subscriber, std::back_inserter(recv_msgs), zmq::recv_flags::dontwait);
@@ -64,6 +73,7 @@ void attachToClient(zmq::context_t* ctx, std::string topic, int thread_number)
         //assert(result && "recv failed");
         //assert(*result == 2);
         
+
         if (recv_msgs.size() != 4)
         {
             // Respond with malformed message and continue
@@ -84,15 +94,35 @@ void attachToClient(zmq::context_t* ctx, std::string topic, int thread_number)
         if (command == "read")
         {
             
-            std::shared_lock lock(mutex_);
-            std::string response = dataRefValuesMap[dref];
+            std::string response = getDataRefFromMap(dref);
             std::cout << "READ COMMAND FOUND - " << topic << ": [" << recv_msgs[0].to_string() << "] " << recv_msgs[1].to_string() << " VALUE: " << response << std::endl;
-            std::shared_lock unlock(mutex_);
+            //std::shared_lock unlock(mutex_);
 
             publisher.send(zmq::buffer(topic), zmq::send_flags::sndmore);
             publisher.send(zmq::buffer(response));
 
         }
+
+        if (command == "set")
+        {
+
+            float r = std::stof(value);
+            xp->setDataRef("sim/multiplayer/controls/engine_throttle_request[0]", r);
+
+            publisher.send(zmq::buffer(topic), zmq::send_flags::sndmore);
+            publisher.send(zmq::buffer("Received"));
+
+        }
+
+        if (command == "command")
+        {
+            xp->sendCommand(dref);
+
+            publisher.send(zmq::buffer(topic), zmq::send_flags::sndmore);
+            publisher.send(zmq::buffer("Received"));
+
+        }
+
     
         std::cout << "Thread topic - " << topic << ": [" << recv_msgs[0].to_string() << "] " << recv_msgs[1].to_string() << std::endl;
     
@@ -112,16 +142,22 @@ void listenForClients(XPlaneUDPClient& xp)
     std::vector<std::future<void>> threads;
     std::map<std::string, int> topics;
     int thread_number = 0;
+    int client_port_number = 5557;
     
+
+    // Prepare our context
     zmq::context_t ctx(1);
     
-    //  Prepare our context and subscriber
+    // Prepare subscriber
     zmq::socket_t subscriber(ctx, zmq::socket_type::sub);
     subscriber.connect("tcp://127.0.0.1:5555");
     
     //  Opens ALL envelopes
     subscriber.set(zmq::sockopt::subscribe, "");
-    
+
+    // Prepare our publisher
+    zmq::socket_t publisher(ctx, zmq::socket_type::pub);
+    publisher.bind("tcp://127.0.0.1:5556");
 
     while (running)
     {
@@ -139,9 +175,15 @@ void listenForClients(XPlaneUDPClient& xp)
         if (topics[topic] == 0)
         {
             std::cout << "New Client Connected : " << topic << std::endl;
+            //Sleep(1000); // Give client a second to prepare for message
+            // Send back the new port they should connect to for their personal connection
+            publisher.send(zmq::buffer(topic), zmq::send_flags::sndmore);
+            publisher.send(zmq::buffer(std::to_string(client_port_number)));
+            
             topics[topic] = 1; // Store it in the map
-            threads.push_back(std::async(std::launch::async, attachToClient, &ctx, topic, thread_number)); // push it back into the thread vector
+            threads.push_back(std::async(std::launch::async, attachToClient, &ctx, topic, thread_number, client_port_number, &xp)); // push it back into the thread vector
             thread_number++;
+            client_port_number += 2;
         }
     
     }

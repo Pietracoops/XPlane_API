@@ -1,26 +1,36 @@
-# XPlane_API
+# XPlane API C++ Client
 
-These are the installation instructions that have been tested and proven functional on Windows 10 Platform
+This repository contains a c++ UDP client that can be connected to through python to send commands directly to XPlane.
 
-*NOTE:* If any of the links to the websites below do not work, I have uploaded all the files you need to my google drive, you can download them [Here](https://drive.google.com/drive/folders/1stWGUvGKy5thNxMQn4vox1m7GDdMjS-7?usp=sharing) 
+## Running the Setup
 
-## Installing X-Plane
+* Start XPlane and wait until a flight has been resumed and you are in the aircraft
+* Navigate to the XPlanePackage_1.0.0/cpp_xp_server folder
+	* Modify the subscriptions.txt to add or remove datarefs that you wish to subscribe to.
+	*  Execute the libXplane-udp-client.exe when ready
+* Navigate to the XPlanePackage_1.0.0/python_client 
+	* Install python 3.7 or later and install the requirements.txt
+	* Run the Main.py script to test out the API
 
-Fetch the X-Plane file in the google drive link above and follow readme instructions within the zip.
 
-## Setting up the API
-* Download Python 2.7.9 and add it to your path - Xplane will search for the python27.dll file upon bootup so make sure to add it to your path (note, 2.7.10 will not work and crash xplane)
-* Download the [Python interface](http://www.xpluginsdk.org/python_interface_latest_downloads.htm) for X-Plane and place it in the resources/plugins folder. If starting coding with this interface, also highly recommended to get the example scripts from these links:
-	* [PythonScripts.zip](http://www.xpluginsdk.org/python_interface_downloads.htm) - OPTIONAL
-* It is also recommended to get the [Dataref Editor](https://www.xsquawkbox.net/xpsdk/mediawiki/DataRefEditor) (OPTIONAL):
-* Unzip the zipped folders Locate your copy of X-Plane 11, then go to the Resources/plugins folder, and move the two folders there
-* In order to run the python plugins we need to install a couple of packages for Python 2.7 (further details can be seen in requirements):
+## Python API Documentation
+
+The Python API currently has 3 functions available to use as follows:
+
+To receive the value of a dataref, use the getDataRef function to receive the value as a string.
 
 ```
-	-pip install --upgrade setuptools==44.1.1
-	-pip install --upgrade "pip < 21.0"
-	-pip install pillow
-	-pip install Enum
-	-pip install PyAutoGUI
-	-pip install PyAudio
+getDataRef(self, dref):
+```
+
+To modify the value of a dataref, use the setDataRef function to alter the value. Note, value must be in string format.
+
+```
+setDataRef(self, dref, value):
+```
+
+To send a command to the cockpit, use the sendCommand, input must be in the string format.
+
+```
+sendCommand(self, dref):
 ```

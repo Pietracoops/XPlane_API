@@ -30,7 +30,7 @@
 
 
 void listenForClients(XPlaneUDPClient& xp);
-void attachToClient(zmq::context_t* ctx, std::string topic, int thread_number);
+void attachToClient(zmq::context_t* ctx, std::string topic, int thread_number, int port_number, XPlaneUDPClient* xp);
 
 class ClientManager
 {
