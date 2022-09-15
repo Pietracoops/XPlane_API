@@ -30,7 +30,7 @@ int main() {
 		// Cannot register your handler? Check GetLastError()
 	}
 
-	while (!application_terminated)
+	while (!application_terminated) 
 	{
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000 * 60));
 	}

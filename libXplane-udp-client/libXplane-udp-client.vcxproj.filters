@@ -44,5 +44,8 @@
     <ClInclude Include="ClientManager.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Logging.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

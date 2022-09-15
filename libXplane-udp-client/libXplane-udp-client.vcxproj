@@ -27,6 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClientManager.h" />
+    <ClInclude Include="Logging.h" />
     <ClInclude Include="XPlaneBeaconListener.h" />
     <ClInclude Include="XPlaneUDPClient.h" />
     <ClInclude Include="XPUtils.h" />

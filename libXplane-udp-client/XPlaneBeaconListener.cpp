@@ -95,7 +95,7 @@ void XPlaneBeaconListener::runListener() {
 
 
 	
-	std::cout << "Initialising Winsock..." << std::endl;
+	//std::cout << "Initialising Winsock..." << std::endl;
 	WSADATA wsa;
 	int wsaResult = WSAStartup(MAKEWORD(2, 2), &wsa);
 	if (wsaResult != 0)
