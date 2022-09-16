@@ -1,0 +1,2 @@
+sim/aircraft/view/acf_descrip[0][40];1
+sim/cockpit2/engine/actuators/throttle_ratio[0];10
