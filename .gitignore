@@ -136,7 +136,5 @@ CppClient_0MQ/libzmq-v142-x64-4_3_4
 CppClient_0MQ/x64
 libXplane-udp-client/test_scripts
 libXplane-udp-client/x64
-PythonClient_0MQ/venv
-PythonClient_0MQ/.idea
 releases/
 PythonClient_0MQ/
