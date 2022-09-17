@@ -20,6 +20,7 @@
 #include "zmq.hpp"
 #include "zmq_addon.hpp"
 
+#include "PortManager.h"
 
 #include "XPlaneBeaconListener.h"
 #include "XPlaneUDPClient.h"

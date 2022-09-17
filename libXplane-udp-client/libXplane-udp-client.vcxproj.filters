@@ -30,6 +30,9 @@
     <ClCompile Include="ClientManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PortManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="XPlaneBeaconListener.h">
@@ -45,6 +48,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Logging.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PortManager.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

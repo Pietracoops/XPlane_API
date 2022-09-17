@@ -8,6 +8,7 @@ std::shared_mutex mutex_;
 
 
 std::map<std::string, std::string> dataRefValuesMap;
+PortManager portManager(5557, 20);
 
 void receiverCallbackFloat(std::string dataref, float value)
 {
@@ -123,12 +124,20 @@ void attachToClient(zmq::context_t* ctx, std::string topic, int thread_number, i
 
         }
 
+        if (command == "Disconnection")
+        {
+            publisher.send(zmq::buffer(topic), zmq::send_flags::sndmore);
+            publisher.send(zmq::buffer("Received"));
+            break;
+        }
+
     
         std::cout << "Thread topic - " << topic << ": [" << recv_msgs[0].to_string() << "] " << recv_msgs[1].to_string() << std::endl;
     
     
     }
 
+    portManager.removeClient(topic);
     std::cout << "Terminating connection for topic: " << topic << std::endl;
 }
 
@@ -142,7 +151,6 @@ void listenForClients(XPlaneUDPClient& xp)
     std::vector<std::future<void>> threads;
     std::map<std::string, int> topics;
     int thread_number = 0;
-    int client_port_number = 5557;
     
 
     // Prepare our context
@@ -172,18 +180,20 @@ void listenForClients(XPlaneUDPClient& xp)
         //assert(*result == 2);
         std::string topic = recv_msgs[0].to_string();
     
-        if (topics[topic] == 0)
+        if (!portManager.isConnected(topic))
         {
-            std::cout << "New Client Connected : " << topic << std::endl;
-            //Sleep(1000); // Give client a second to prepare for message
+            
+            auto [new_subscribing_port, new_publishing_port] = portManager.storeClient(topic);
+
+            std::cout << "New Client Connected : " << topic << " - on port " << new_subscribing_port << " and " << new_publishing_port << std::endl;
+
             // Send back the new port they should connect to for their personal connection
             publisher.send(zmq::buffer(topic), zmq::send_flags::sndmore);
-            publisher.send(zmq::buffer(std::to_string(client_port_number)));
+            publisher.send(zmq::buffer(std::to_string(new_subscribing_port)));
             
             topics[topic] = 1; // Store it in the map
-            threads.push_back(std::async(std::launch::async, attachToClient, &ctx, topic, thread_number, client_port_number, &xp)); // push it back into the thread vector
+            threads.push_back(std::async(std::launch::async, attachToClient, &ctx, topic, thread_number, new_subscribing_port, &xp)); // push it back into the thread vector
             thread_number++;
-            client_port_number += 2;
         }
     
     }

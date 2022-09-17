@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ClientManager.cpp" />
+    <ClCompile Include="PortManager.cpp" />
     <ClCompile Include="TestXPlaneUDPClient.cpp" />
     <ClCompile Include="XPlaneBeaconListener.cpp" />
     <ClCompile Include="XPlaneUDPClient.cpp" />
@@ -28,6 +29,7 @@
   <ItemGroup>
     <ClInclude Include="ClientManager.h" />
     <ClInclude Include="Logging.h" />
+    <ClInclude Include="PortManager.h" />
     <ClInclude Include="XPlaneBeaconListener.h" />
     <ClInclude Include="XPlaneUDPClient.h" />
     <ClInclude Include="XPUtils.h" />
