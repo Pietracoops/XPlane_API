@@ -1,5 +1,7 @@
-
 #include "ClientManager.h"
+
+#include <iostream>
+#include <future>
 
 using namespace std;
 bool application_terminated = false;
@@ -18,11 +20,11 @@ BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
 int main() {
 
 	// ENTRY POINT
-	ClientManager Server;
+	ClientManager server;
 
 
 
-	auto thread1 = std::async(std::launch::async, [&Server] { Server.run(); });
+	auto thread = std::async(std::launch::async, [&server] { server.run(); });
 	
 	
 	if (FALSE == SetConsoleCtrlHandler(ConsoleHandlerRoutine, TRUE))
@@ -30,13 +32,10 @@ int main() {
 		// Cannot register your handler? Check GetLastError()
 	}
 
-	while (!application_terminated) 
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000 * 60));
-	}
+	while (!application_terminated) { }
 
 
-	Server.terminate();
+	server.terminate();
 	std::cout << "Server terminated..." << std::endl;
 
 	return 1;

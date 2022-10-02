@@ -1847,40 +1847,40 @@ class socket_base
     }
 #endif
 
-    void bind(std::string const &addr) { bind(addr.c_str()); }
+    int bind(std::string const &addr) { return bind(addr.c_str()); }
 
-    void bind(const char *addr_)
+    int bind(const char *addr_)
     {
         int rc = zmq_bind(_handle, addr_);
-        if (rc != 0)
-            throw error_t();
+        return rc;
+        //if (rc != 0) throw error_t();
     }
 
-    void unbind(std::string const &addr) { unbind(addr.c_str()); }
+    int unbind(std::string const &addr) { return unbind(addr.c_str()); }
 
-    void unbind(const char *addr_)
+    int unbind(const char *addr_)
     {
         int rc = zmq_unbind(_handle, addr_);
-        if (rc != 0)
-            throw error_t();
+        return rc;
+        //if (rc != 0) throw error_t();
     }
 
-    void connect(std::string const &addr) { connect(addr.c_str()); }
+    int connect(std::string const &addr) { return connect(addr.c_str()); }
 
-    void connect(const char *addr_)
+    int connect(const char *addr_)
     {
         int rc = zmq_connect(_handle, addr_);
-        if (rc != 0)
-            throw error_t();
+        return rc;
+        //if (rc != 0) throw error_t();
     }
 
-    void disconnect(std::string const &addr) { disconnect(addr.c_str()); }
+    int disconnect(std::string const &addr) { return disconnect(addr.c_str()); }
 
-    void disconnect(const char *addr_)
+    int disconnect(const char *addr_)
     {
         int rc = zmq_disconnect(_handle, addr_);
-        if (rc != 0)
-            throw error_t();
+        return rc;
+        //if (rc != 0) throw error_t();
     }
 
     ZMQ_DEPRECATED("from 4.7.1, use handle() != nullptr or operator bool")

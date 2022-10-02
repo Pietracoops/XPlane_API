@@ -249,10 +249,10 @@ void XPlaneUDPClient::listenerThread() {
 
 			if (errno != EWOULDBLOCK) 
 			{
-				ostringstream buf;
-				buf << "UDP CLIENT: recvfrom returned " << recv_len << " errno is " << errno << endl;
-				std::cout << buf.str() << " last error = " << WSAGetLastError() << std::endl;
-				throw runtime_error(buf.str());
+				//ostringstream buf;
+				//buf << "UDP CLIENT: recvfrom returned " << recv_len << " errno is " << errno << endl;
+				//std::cout << buf.str() << " last error = " << WSAGetLastError() << std::endl;
+				//throw runtime_error(buf.str());
 			};
 
 		};

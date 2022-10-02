@@ -26,7 +26,7 @@
 
 #include <cstdint>
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -36,6 +36,6 @@ uint32_t xint2uint32(uint8_t * buf);
 
 float xflt2float(uint8_t * buf);
 float xflt2floatMass(uint8_t* buf);
-int readDataRefsFromFile(std::string fileName, std::map<std::string, int>& map);
+int readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::string, int>& map);
 
 #endif /* XPLANEUDPCLIENT_SRC_XPUTILS_H_ */

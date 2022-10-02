@@ -54,7 +54,7 @@ float xflt2float (uint8_t * buf)
 }
 
 
-int readDataRefsFromFile(std::string fileName, std::map<std::string, int>& map)
+int readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::string, int>& map)
 {
 
 	string line;
@@ -67,10 +67,7 @@ int readDataRefsFromFile(std::string fileName, std::map<std::string, int>& map)
 		while (getline(myfile, line))
 		{
 			stringstream ssline(line);
-			while (getline(ssline, segment, ';'))
-			{
-				seglist.push_back(segment);
-			}
+			while (getline(ssline, segment, ';')) seglist.push_back(segment);
 			map[seglist[0]] = stoi(seglist[1]);
 			seglist.clear();
 		}

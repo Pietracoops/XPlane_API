@@ -191,10 +191,11 @@ void XPlaneBeaconListener::runListener() {
 		{
 
 			if (errno != EWOULDBLOCK) {
-				ostringstream buf;
-				buf << "XPlaneBeaconListner: recvfrom returned " << recv_len << " errno is " << strerror(errno) << endl;
+				continue;
+				//ostringstream buf;
+				//buf << "XPlaneBeaconListner: recvfrom returned " << recv_len << " errno is " << strerror(errno) << endl;
 				//std::cout << buf.str() << " last error = " << WSAGetLastError() << std::endl;
-				break;
+				//break;
 				//throw runtime_error(buf.str());
 			};
 
