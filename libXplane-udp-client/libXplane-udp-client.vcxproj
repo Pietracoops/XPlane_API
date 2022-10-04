@@ -19,20 +19,26 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ClientManager.cpp" />
-    <ClCompile Include="PortManager.cpp" />
-    <ClCompile Include="TestXPlaneUDPClient.cpp" />
-    <ClCompile Include="XPlaneBeaconListener.cpp" />
-    <ClCompile Include="XPlaneUDPClient.cpp" />
-    <ClCompile Include="XPUtils.cpp" />
+    <ClCompile Include="src\ClientManager.cpp" />
+    <ClCompile Include="src\PortManager.cpp" />
+    <ClCompile Include="src\TestXPlaneUDPClient.cpp" />
+    <ClCompile Include="src\XPlaneBeaconListener.cpp" />
+    <ClCompile Include="src\XPlaneUDPClient.cpp" />
+    <ClCompile Include="src\XPUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ClientManager.h" />
-    <ClInclude Include="Logging.h" />
-    <ClInclude Include="PortManager.h" />
-    <ClInclude Include="XPlaneBeaconListener.h" />
-    <ClInclude Include="XPlaneUDPClient.h" />
-    <ClInclude Include="XPUtils.h" />
+    <ClInclude Include="libzmq-v142-x64-4_3_4\zmq.h" />
+    <ClInclude Include="libzmq-v142-x64-4_3_4\zmq.hpp" />
+    <ClInclude Include="libzmq-v142-x64-4_3_4\zmq_addon.hpp" />
+    <ClInclude Include="src\ClientManager.h" />
+    <ClInclude Include="src\Logging.h" />
+    <ClInclude Include="src\PortManager.h" />
+    <ClInclude Include="src\XPlaneBeaconListener.h" />
+    <ClInclude Include="src\XPlaneUDPClient.h" />
+    <ClInclude Include="src\XPUtils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Subscriptions.txt" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -94,9 +100,13 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)bin\$(Configuration)-$(Platform)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)bin\$(Configuration)-$(Platform)\$(ProjectName)\intermediate\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)bin\$(Configuration)-$(Platform)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)bin\$(Configuration)-$(Platform)\$(ProjectName)\intermediate\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -135,14 +145,19 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalUsingDirectories>
       </AdditionalUsingDirectories>
-      <AdditionalIncludeDirectories>$(SolutionDir)libXplane-udp-client\libzmq-v142-x64-4_3_4;$(SolutionDir)libXplane-udp-client\cppzmq-4.8.1;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src\;$(ProjectDir)vendor\libzmq-v142-x64-4_3_4;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libzmq-v142-mt-4_3_4.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)libXplane-udp-client\libzmq-v142-x64-4_3_4;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libzmq-v142-mt-4_3_4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /E /Y "$(ProjectDir)libsodium.dll" "$(TargetDir)"
+xcopy /E /Y "$(ProjectDir)libzmq-v142-mt-4_3_4.dll" "$(TargetDir)"
+xcopy /E /Y "$(ProjectDir)Subscriptions.txt" "$(TargetDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -152,7 +167,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINSOCK_DEPRECATED_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_CONSOLE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)libXplane-udp-client\libzmq-v142-x64-4_3_4;$(SolutionDir)libXplane-udp-client\cppzmq-4.8.1;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src\;$(ProjectDir)vendor\libzmq-v142-x64-4_3_4;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -160,9 +175,14 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libzmq-v142-mt-4_3_4.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)libXplane-udp-client\libzmq-v142-x64-4_3_4;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libzmq-v142-mt-4_3_4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /E /Y "$(ProjectDir)libsodium.dll" "$(TargetDir)"
+xcopy /E /Y "$(ProjectDir)libzmq-v142-mt-4_3_4.dll" "$(TargetDir)"
+xcopy /E /Y "$(ProjectDir)Subscriptions.txt" "$(TargetDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
