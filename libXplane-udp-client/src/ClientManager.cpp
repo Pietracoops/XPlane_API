@@ -8,13 +8,13 @@
 void ClientManager::receiverCallbackFloat(std::string dataref, float value)
 {
     std::cout << "receiverCallbackFloat got [" << dataref << "] and [" << value << "]" << std::endl;
-    m_DataRefValuesMap[dataref] = std::to_string(value);
+    m_DataRefs[dataref] = DataRef(std::to_string(value), std::chrono::steady_clock::now());
 }
 
 void ClientManager::receiverCallbackString(std::string dataref, std::string value)
 {
     std::cout << "receiverCallbackString got [" << dataref << "] and [" << value << "]" << std::endl;
-    m_DataRefValuesMap[dataref] = value;
+    m_DataRefs[dataref] = DataRef(value, std::chrono::steady_clock::now());
 }
 
 void ClientManager::receiverBeaconCallback(XPlaneBeaconListener::XPlaneServer server, bool exists)
@@ -25,9 +25,19 @@ void ClientManager::receiverBeaconCallback(XPlaneBeaconListener::XPlaneServer se
     m_Found = true;
 }
 
-std::string& ClientManager::getDataRefFromMap(std::string& dref)
+void ClientManager::setDataRef(const std::string& dataref, const std::string& value, std::string& response)
 {
-    return m_DataRefValuesMap[dref];
+    float v = std::stof(value);
+    m_XPlaneClient->setDataRef(dataref, v);
+}
+
+void ClientManager::terminateWriter(const std::string& topic)
+{
+    if (m_Writer.Topic == topic)
+    {
+        m_Writer.IsCockpitFree = true;
+        m_Writer.Topic.clear();
+    }
 }
 
 void ClientManager::attachToClient(std::string topic, size_t publisher_index, size_t subscriber_index)
@@ -55,18 +65,45 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
 
         if (command == "read")
         {
-            std::string response = getDataRefFromMap(dref);
+            std::string response;
+            std::chrono::nanoseconds timeElaspedSeconds;
+            if (m_DataRefs.find(dref) != m_DataRefs.end())
+            {
+                response = m_DataRefs[dref].Value;
+                timeElaspedSeconds = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - m_DataRefs[dref].LastUpdateTime);
+            }
+            else response = "Error: Server is currently not subscribed to " + dref;
+
             std::cout << "READ COMMAND FOUND - " << topic << ": [" << recv_msgs[0].to_string() << "] " << recv_msgs[1].to_string() << " VALUE: " << response << std::endl;
+
+            m_Publishers[publisher_index].send(zmq::buffer(topic), zmq::send_flags::sndmore);
+            m_Publishers[publisher_index].send(zmq::buffer(response), zmq::send_flags::sndmore);
+            m_Publishers[publisher_index].send(zmq::buffer( std::to_string( timeElaspedSeconds.count() / 1e9 ) ));
+        }
+
+        if (command == "set")
+        {
+            std::string response = "Received";
+            if (m_DataRefs.find(dref) != m_DataRefs.end())
+            {
+                if (m_Writer.IsCockpitFree)
+                {
+                    m_Writer.IsCockpitFree = false;
+                    m_Writer.Topic = topic;
+                    setDataRef(dref, value, response);
+                }
+                else if (m_Writer.Topic == topic) setDataRef(dref, value, response);
+                else response = "Error: Cockpit is already in use! Please wait for termination of the current writer";
+            }
+            else response = "Error: Server is currently not subscribed to " + dref;
 
             m_Publishers[publisher_index].send(zmq::buffer(topic), zmq::send_flags::sndmore);
             m_Publishers[publisher_index].send(zmq::buffer(response));
         }
 
-        if (command == "set")
+        if (command == "terminate")
         {
-
-            float r = std::stof(value);
-            m_XPlaneClient->setDataRef(dref, r);
+            terminateWriter(topic);
 
             m_Publishers[publisher_index].send(zmq::buffer(topic), zmq::send_flags::sndmore);
             m_Publishers[publisher_index].send(zmq::buffer("Received"));
@@ -89,6 +126,8 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
 
         std::cout << "Thread topic - " << topic << ": [" << recv_msgs[0].to_string() << "] " << recv_msgs[1].to_string() << std::endl;
     }
+
+    terminateWriter(topic);
 
     std::unique_lock lock(m_Mutex);
     m_ClientsToRemove.push(Client(topic, publisher_index, subscriber_index));
