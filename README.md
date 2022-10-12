@@ -17,6 +17,8 @@ Open tasks for the API are tracked using [Jira](https://pilotai-api.atlassian.ne
 
 This is a C++ application using and will thus require [Visual Studio Redistributables](https://docs.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170) for Visual Studio 2019. Essential runtimes have been packaged with binaries and can be retrieved on [Github](https://github.com/Pietracoops/XPlane_API/releases).
 
+Install XPlane from here: https://drive.google.com/drive/folders/1stWGUvGKy5thNxMQn4vox1m7GDdMjS-7?usp=sharing
+
 ## Running the Setup
 
 Follow these guidelines for successfull usage of the server

@@ -1,3 +1,9 @@
+# bin folder
+bin/
+
+# VS filter files
+.vcxproj.filters
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -130,11 +136,3 @@ dmypy.json
 
 X64/
 .vs/
-
-CppClient_0MQ/cppzmq-4.8.1
-CppClient_0MQ/libzmq-v142-x64-4_3_4
-CppClient_0MQ/x64
-libXplane-udp-client/test_scripts
-libXplane-udp-client/x64
-releases/
-PythonClient_0MQ/
