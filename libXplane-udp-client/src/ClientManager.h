@@ -6,6 +6,7 @@
 
 #define NOMINMAX
 
+#include <chrono>
 #include <deque>
 #include <shared_mutex>
 #include <stack>
@@ -35,7 +36,16 @@ private:
 	uint16_t m_Port = 0;
 	std::atomic<bool> m_Running = false;
 
-	std::unordered_map<std::string, std::string> m_DataRefValuesMap;
+	struct DataRef
+	{
+		std::string Value;
+		std::chrono::steady_clock::time_point LastUpdateTime;
+
+		DataRef() = default;
+		DataRef(const std::string& value, const std::chrono::steady_clock::time_point& lastUpdateTime) : Value(value), LastUpdateTime(lastUpdateTime) { }
+	};
+
+	std::unordered_map<std::string, DataRef> m_DataRefs;
 
 	XPlaneUDPClient* m_XPlaneClient = nullptr;
 
@@ -51,6 +61,15 @@ private:
 
 	std::vector<std::string> m_ClientTopics;
 	std::shared_mutex m_Mutex;
+
+	struct Writer
+	{
+		bool IsCockpitFree = true;
+
+		std::string Topic;
+	};
+
+	Writer m_Writer;
 
 	const std::string m_Address = "tcp://127.0.0.1:";
 
@@ -85,7 +104,8 @@ private:
 	void receiverCallbackString(std::string dataref, std::string value);
 	void receiverBeaconCallback(XPlaneBeaconListener::XPlaneServer server, bool exists);
 
-	std::string& getDataRefFromMap(std::string& dref);
+	void setDataRef(const std::string& dataref, const std::string& value, std::string& response);
+	void terminateWriter(const std::string& topic);
 
 	size_t storeInDeque(zmq::socket_type socket_type, std::vector<size_t>& free, 
 		std::deque<zmq::socket_t>& deque, 
