@@ -64,9 +64,16 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
 
         if (command == "set")
         {
+            if (std::regex_search(dref, m_ipcl_labels))
+            {
+                m_DataRefValuesMap[dref] = value;
+            }
+            else
+            {
+                float r = std::stof(value);
+                m_XPlaneClient->setDataRef(dref, r);
+            }
 
-            float r = std::stof(value);
-            m_XPlaneClient->setDataRef(dref, r);
 
             m_Publishers[publisher_index].send(zmq::buffer(topic), zmq::send_flags::sndmore);
             m_Publishers[publisher_index].send(zmq::buffer("Received"));
@@ -74,7 +81,10 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
 
         if (command == "command")
         {
-            m_XPlaneClient->sendCommand(dref);
+            if (!std::regex_search(dref, m_ipcl_labels))
+            {
+                m_XPlaneClient->sendCommand(dref);
+            }
 
             m_Publishers[publisher_index].send(zmq::buffer(topic), zmq::send_flags::sndmore);
             m_Publishers[publisher_index].send(zmq::buffer("Received"));
@@ -208,11 +218,17 @@ void ClientManager::run()
     int result = readDataRefsFromFile(dataRefsFileName, dataRefsMap);
     if (result != 0) std::cout << "Subscriptions.txt missing or unable to open." << std::endl;
 
+    m_ipcl_labels.assign("ipcl/");
+
     // Create subscriptions
     for (auto const& [key, val] : dataRefsMap)
     {
         std::cout << "Creating subscription for " << key << " with min frequency of " << val << std::endl;
-        m_XPlaneClient->subscribeDataRef(key, val);
+        if (!std::regex_search(key, m_ipcl_labels))
+        {
+            m_XPlaneClient->subscribeDataRef(key, val);
+        }
+        
     }
 
     listenForClients();

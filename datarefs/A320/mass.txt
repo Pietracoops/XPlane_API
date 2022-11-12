@@ -1,0 +1,2 @@
+a320/Pedestal/EngineMaster1 (1 or 0, button right below the thrust levers)
+sim/time/total_flight_time_sec (time)

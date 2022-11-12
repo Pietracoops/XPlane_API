@@ -12,6 +12,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <regex>
 
 #include "zmq.hpp"
 #include "zmq_addon.hpp"
@@ -52,6 +53,8 @@ private:
 	std::shared_mutex m_Mutex;
 
 	const std::string m_Address = "tcp://127.0.0.1:";
+
+	std::regex m_ipcl_labels;
 
 	static constexpr unsigned int s_StaringPort = 5555;
 

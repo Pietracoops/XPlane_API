@@ -66,6 +66,10 @@ int readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::st
 	{
 		while (getline(myfile, line))
 		{
+			if (line[0] == '#')	// Enable comments in the subscriptions.txt file
+			{
+				continue;
+			}
 			stringstream ssline(line);
 			while (getline(ssline, segment, ';')) seglist.push_back(segment);
 			map[seglist[0]] = stoi(seglist[1]);
