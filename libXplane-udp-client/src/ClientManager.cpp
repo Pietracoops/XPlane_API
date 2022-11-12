@@ -89,7 +89,7 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
             
                 if (std::regex_search(dref, m_ipcl_labels))
                 {
-                    m_DataRefValuesMap[dref] = value;
+                    m_DataRefs[dref] = DataRef(value, std::chrono::steady_clock::now());
                 }
                 else
                 {
@@ -99,10 +99,10 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
                         m_Writer.Topic = topic;
                         setDataRef(dref, value, response);
                     }
+                    else if (m_Writer.Topic == topic) setDataRef(dref, value, response);
+                    else response = "Error: Cockpit is already in use! Please wait for termination of the current writer";
                 }
-            
-                else if (m_Writer.Topic == topic) setDataRef(dref, value, response);
-                else response = "Error: Cockpit is already in use! Please wait for termination of the current writer";
+
             }
             else response = "Error: Server is currently not subscribed to " + dref;
 
