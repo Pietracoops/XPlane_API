@@ -52,36 +52,3 @@ float xflt2float (uint8_t * buf)
 	v.i = xint2uint32 (buf);
 	return v.f;
 }
-
-
-int readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::string, int>& map)
-{
-
-	string line;
-	string segment;
-	vector<string> seglist;
-
-	ifstream myfile(fileName);
-	if (myfile.is_open())
-	{
-		while (getline(myfile, line))
-		{
-			if (line[0] == '#')	// Enable comments in the subscriptions.txt file
-			{
-				continue;
-			}
-			stringstream ssline(line);
-			while (getline(ssline, segment, ';')) seglist.push_back(segment);
-			map[seglist[0]] = stoi(seglist[1]);
-			seglist.clear();
-		}
-		myfile.close();
-	}
-	else
-	{
-		std::cout << "Unable to open file" << std::endl;
-		return 1;
-	}
-
-	return 0;
-}
