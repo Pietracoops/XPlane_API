@@ -136,3 +136,7 @@ dmypy.json
 
 X64/
 .vs/
+
+PythonClient_0MQ/
+CppClient_0MQ/
+libXplane-udp-client/libXplane-udp-client.vcxproj.user

@@ -1,3 +1,6 @@
+# This is a comment
 sim/aircraft/view/acf_descrip[0][40];10
 sim/cockpit2/switches/landing_lights_on;10
 sim/cockpit2/engine/actuators/throttle_ratio[0];100
+ipcl/deviation_model/value1;0
+ipcl/deviation_model/value2;0

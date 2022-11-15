@@ -86,14 +86,23 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
             std::string response = "Received";
             if (m_DataRefs.find(dref) != m_DataRefs.end())
             {
-                if (m_Writer.IsCockpitFree)
+            
+                if (std::regex_search(dref, m_ipcl_labels))
                 {
-                    m_Writer.IsCockpitFree = false;
-                    m_Writer.Topic = topic;
-                    setDataRef(dref, value, response);
+                    m_DataRefs[dref] = DataRef(value, std::chrono::steady_clock::now());
                 }
-                else if (m_Writer.Topic == topic) setDataRef(dref, value, response);
-                else response = "Error: Cockpit is already in use! Please wait for termination of the current writer";
+                else
+                {
+                    if (m_Writer.IsCockpitFree)
+                    {
+                        m_Writer.IsCockpitFree = false;
+                        m_Writer.Topic = topic;
+                        setDataRef(dref, value, response);
+                    }
+                    else if (m_Writer.Topic == topic) setDataRef(dref, value, response);
+                    else response = "Error: Cockpit is already in use! Please wait for termination of the current writer";
+                }
+
             }
             else response = "Error: Server is currently not subscribed to " + dref;
 
@@ -105,13 +114,17 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
         {
             terminateWriter(topic);
 
+
             m_Publishers[publisher_index].send(zmq::buffer(topic), zmq::send_flags::sndmore);
             m_Publishers[publisher_index].send(zmq::buffer("Received"));
         }
 
         if (command == "command")
         {
-            m_XPlaneClient->sendCommand(dref);
+            if (!std::regex_search(dref, m_ipcl_labels))
+            {
+                m_XPlaneClient->sendCommand(dref);
+            }
 
             m_Publishers[publisher_index].send(zmq::buffer(topic), zmq::send_flags::sndmore);
             m_Publishers[publisher_index].send(zmq::buffer("Received"));
@@ -244,14 +257,20 @@ void ClientManager::run()
     m_XPlaneClient->setDebug(0);
 
     // Read in the dataref Values
-    int result = readDataRefsFromFile(dataRefsFileName, dataRefsMap);
+    int result = readDataRefsFromFile(dataRefsFileName, m_DataRefs);
     if (result != 0) std::cout << "Subscriptions.txt missing or unable to open." << std::endl;
+
+    m_ipcl_labels.assign("ipcl/");
 
     // Create subscriptions
     for (auto const& [key, val] : dataRefsMap)
     {
         std::cout << "Creating subscription for " << key << " with min frequency of " << val << std::endl;
-        m_XPlaneClient->subscribeDataRef(key, val);
+        if (!std::regex_search(key, m_ipcl_labels))
+        {
+            m_XPlaneClient->subscribeDataRef(key, val);
+        }
+        
     }
 
     listenForClients();
@@ -341,4 +360,38 @@ void ClientManager::disconnect(size_t subscriber_index)
     m_Subscribers[subscriber_index].disconnect(m_SubscribersAddress[subscriber_index]);
     m_PortManager.liberatePort(m_SubscriberPorts[subscriber_index]);
     m_UnusedSubscribers.emplace_back(subscriber_index);
+}
+
+
+int ClientManager::readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::string, DataRef>& map)
+{
+
+    std::string line;
+    std::string segment;
+    std::vector<std::string> seglist;
+
+    std::ifstream myfile(fileName);
+    if (myfile.is_open())
+    {
+        while (getline(myfile, line))
+        {
+            if (line[0] == '#')	// Enable comments in the subscriptions.txt file
+            {
+                continue;
+            }
+            std::stringstream ssline(line);
+            while (getline(ssline, segment, ';')) seglist.push_back(segment);
+
+            map[seglist[0]] = DataRef(seglist[1], std::chrono::steady_clock::now());
+            seglist.clear();
+        }
+        myfile.close();
+    }
+    else
+    {
+        std::cout << "Unable to open file" << std::endl;
+        return 1;
+    }
+
+    return 0;
 }
