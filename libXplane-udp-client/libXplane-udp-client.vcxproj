@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\ClientManager.cpp" />
+    <ClCompile Include="src\Log.cpp" />
     <ClCompile Include="src\PortManager.cpp" />
     <ClCompile Include="src\TestXPlaneUDPClient.cpp" />
     <ClCompile Include="src\XPlaneBeaconListener.cpp" />
@@ -31,11 +32,98 @@
     <ClInclude Include="libzmq-v142-x64-4_3_4\zmq.hpp" />
     <ClInclude Include="libzmq-v142-x64-4_3_4\zmq_addon.hpp" />
     <ClInclude Include="src\ClientManager.h" />
-    <ClInclude Include="src\Logging.h" />
+    <ClInclude Include="src\Log.h" />
     <ClInclude Include="src\PortManager.h" />
     <ClInclude Include="src\XPlaneBeaconListener.h" />
     <ClInclude Include="src\XPlaneUDPClient.h" />
     <ClInclude Include="src\XPUtils.h" />
+    <ClInclude Include="vendor\spdlog\async.h" />
+    <ClInclude Include="vendor\spdlog\async_logger-inl.h" />
+    <ClInclude Include="vendor\spdlog\async_logger.h" />
+    <ClInclude Include="vendor\spdlog\cfg\argv.h" />
+    <ClInclude Include="vendor\spdlog\cfg\env.h" />
+    <ClInclude Include="vendor\spdlog\cfg\helpers-inl.h" />
+    <ClInclude Include="vendor\spdlog\cfg\helpers.h" />
+    <ClInclude Include="vendor\spdlog\cfg\log_levels.h" />
+    <ClInclude Include="vendor\spdlog\common-inl.h" />
+    <ClInclude Include="vendor\spdlog\common.h" />
+    <ClInclude Include="vendor\spdlog\details\backtracer-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\backtracer.h" />
+    <ClInclude Include="vendor\spdlog\details\circular_q.h" />
+    <ClInclude Include="vendor\spdlog\details\console_globals.h" />
+    <ClInclude Include="vendor\spdlog\details\file_helper-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\file_helper.h" />
+    <ClInclude Include="vendor\spdlog\details\fmt_helper.h" />
+    <ClInclude Include="vendor\spdlog\details\log_msg-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\log_msg.h" />
+    <ClInclude Include="vendor\spdlog\details\log_msg_buffer-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\log_msg_buffer.h" />
+    <ClInclude Include="vendor\spdlog\details\mpmc_blocking_q.h" />
+    <ClInclude Include="vendor\spdlog\details\null_mutex.h" />
+    <ClInclude Include="vendor\spdlog\details\os-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\os.h" />
+    <ClInclude Include="vendor\spdlog\details\periodic_worker-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\periodic_worker.h" />
+    <ClInclude Include="vendor\spdlog\details\registry-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\registry.h" />
+    <ClInclude Include="vendor\spdlog\details\synchronous_factory.h" />
+    <ClInclude Include="vendor\spdlog\details\tcp_client-windows.h" />
+    <ClInclude Include="vendor\spdlog\details\tcp_client.h" />
+    <ClInclude Include="vendor\spdlog\details\thread_pool-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\thread_pool.h" />
+    <ClInclude Include="vendor\spdlog\details\windows_include.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bin_to_hex.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\chrono.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\color.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\compile.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\core.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\format-inl.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\format.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\locale.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\ostream.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\posix.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\printf.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\ranges.h" />
+    <ClInclude Include="vendor\spdlog\fmt\fmt.h" />
+    <ClInclude Include="vendor\spdlog\fmt\ostr.h" />
+    <ClInclude Include="vendor\spdlog\formatter.h" />
+    <ClInclude Include="vendor\spdlog\fwd.h" />
+    <ClInclude Include="vendor\spdlog\logger-inl.h" />
+    <ClInclude Include="vendor\spdlog\logger.h" />
+    <ClInclude Include="vendor\spdlog\pattern_formatter-inl.h" />
+    <ClInclude Include="vendor\spdlog\pattern_formatter.h" />
+    <ClInclude Include="vendor\spdlog\sinks\android_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\ansicolor_sink-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\ansicolor_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\base_sink-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\base_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\basic_file_sink-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\basic_file_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\daily_file_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\dist_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\dup_filter_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\msvc_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\null_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\ostream_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\ringbuffer_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\rotating_file_sink-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\rotating_file_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\sink-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\stdout_color_sinks-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\stdout_color_sinks.h" />
+    <ClInclude Include="vendor\spdlog\sinks\stdout_sinks-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\stdout_sinks.h" />
+    <ClInclude Include="vendor\spdlog\sinks\syslog_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\systemd_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\tcp_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\wincolor_sink-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\wincolor_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\win_eventlog_sink.h" />
+    <ClInclude Include="vendor\spdlog\spdlog-inl.h" />
+    <ClInclude Include="vendor\spdlog\spdlog.h" />
+    <ClInclude Include="vendor\spdlog\tweakme.h" />
+    <ClInclude Include="vendor\spdlog\version.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Subscriptions.txt" />
@@ -145,7 +233,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalUsingDirectories>
       </AdditionalUsingDirectories>
-      <AdditionalIncludeDirectories>$(ProjectDir)src\;$(ProjectDir)vendor\libzmq-v142-x64-4_3_4;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)vendor;$(ProjectDir)vendor\libzmq-v142-x64-4_3_4;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -167,7 +255,7 @@ xcopy /E /Y "$(ProjectDir)Subscriptions.txt" "$(TargetDir)"</Command>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINSOCK_DEPRECATED_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_CONSOLE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)src\;$(ProjectDir)vendor\libzmq-v142-x64-4_3_4;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)vendor;$(ProjectDir)vendor\libzmq-v142-x64-4_3_4;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>

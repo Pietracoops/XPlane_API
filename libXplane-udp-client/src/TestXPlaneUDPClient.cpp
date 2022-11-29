@@ -3,6 +3,8 @@
 #include <iostream>
 #include <future>
 
+#include "Log.h"
+
 using namespace std;
 bool application_terminated = false;
 BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
@@ -20,6 +22,8 @@ BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
 int main() {
 
 	// ENTRY POINT
+	Log::Init();
+
 	ClientManager server;
 	
 	if (FALSE == SetConsoleCtrlHandler(ConsoleHandlerRoutine, TRUE)) { }

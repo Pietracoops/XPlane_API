@@ -1,25 +1,26 @@
 #include "ClientManager.h"
 
-#include <atomic>
 #include <functional>
 #include <future>
 #include <iostream>
 
+#include "Log.h"
+
 void ClientManager::receiverCallbackFloat(std::string dataref, float value)
 {
-    std::cout << "receiverCallbackFloat got [" << dataref << "] and [" << value << "]" << std::endl;
+    LOG_INFO("receiverCallbackFloat got [{0}] and [{1}]", dataref, value);
     m_DataRefs[dataref] = DataRef(std::to_string(value), std::chrono::steady_clock::now());
 }
 
 void ClientManager::receiverCallbackString(std::string dataref, std::string value)
 {
-    std::cout << "receiverCallbackString got [" << dataref << "] and [" << value << "]" << std::endl;
+    LOG_INFO("receiverCallbackFloat got [{0}] and [{1}]", dataref, value);
     m_DataRefs[dataref] = DataRef(value, std::chrono::steady_clock::now());
 }
 
 void ClientManager::receiverBeaconCallback(XPlaneBeaconListener::XPlaneServer server, bool exists)
 {
-    std::cout << "receiverBeaconCallback got [" << server.toString() << " is " << (exists ? "alive" : "dead") << "]" << std::endl;
+    LOG_INFO("receiverBeaconCallback got [{0} is {1}]", server.toString(), exists ? "alive" : "dead");
     m_Host = server.host;
     m_Port = server.receivePort;
     m_Found = true;
@@ -54,7 +55,7 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
         if (recv_msgs.size() != 4)
         {
             // Respond with malformed message and continue
-            std::cout << "====================Too small==========================" << recv_msgs.size() << std::endl;
+            LOG_WARN("Message: [{0}] is too small", recv_msgs.size());
             continue;
         }
 
@@ -74,7 +75,7 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
             }
             else response = "Error: Server is currently not subscribed to " + dref;
 
-            std::cout << "READ COMMAND FOUND - " << topic << ": [" << recv_msgs[0].to_string() << "] " << recv_msgs[1].to_string() << " VALUE: " << response << std::endl;
+            LOG_INFO("READ COMMAND FOUND - {0}: [{1}] {2} VALUE: {3}", topic, recv_msgs[0].to_string(), recv_msgs[1].to_string(), response);
 
             m_Publishers[publisher_index].send(zmq::buffer(topic), zmq::send_flags::sndmore);
             m_Publishers[publisher_index].send(zmq::buffer(response), zmq::send_flags::sndmore);
@@ -137,21 +138,20 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
             break;
         }
 
-        std::cout << "Thread topic - " << topic << ": [" << recv_msgs[0].to_string() << "] " << recv_msgs[1].to_string() << std::endl;
+        LOG_INFO("Thread topic - {0}: [{1}] {2}", topic, recv_msgs[0].to_string(), recv_msgs[1].to_string());
     }
 
     terminateWriter(topic);
 
     std::unique_lock lock(m_Mutex);
     m_ClientsToRemove.push(Client(topic, publisher_index, subscriber_index));
-    std::cout << "Terminating connection for topic: " << topic << std::endl;
+    LOG_INFO("Terminating connection for topic: {0}", topic);
 }
 
 void ClientManager::listenForClients()
 {
     // Main thread to listen (subscriber) and send m_Port to client (publisher)
-    std::cout << std::endl;
-    std::cout << "Running Listener" << std::endl;
+    LOG_INFO("Running Listener");
     // Vector to hold all threads for each new client
     std::vector<std::future<void>> threads;
 
@@ -162,8 +162,8 @@ void ClientManager::listenForClients()
     // Reader
     m_Subscribers[subscriberOfClients].set(zmq::sockopt::subscribe, "");
 
-    std::cout << "Connect to server by assigning client's publisher port to: " << sport << std::endl;
-    std::cout << "Connect to server by assigning client's subscriber port to: " << pport << std::endl;
+    LOG_INFO("Connect to server by assigning client's publisher port to: {0}", sport);
+    LOG_INFO("Connect to server by assigning client's subscriber port to: {0}", pport);
 
     while (m_Running)
     {
@@ -193,7 +193,7 @@ void ClientManager::listenForClients()
 
         std::string topic = recv_msgs[0].to_string();
 
-        std::cout << "Received topic: " << topic << " with command: " << recv_msgs[1].to_string() << std::endl;
+        LOG_INFO("Received topic: {0} with command: {1}", topic, recv_msgs[1].to_string());
     
         if (std::find(m_ClientTopics.begin(), m_ClientTopics.end(), topic) == m_ClientTopics.end())
         {
@@ -202,7 +202,7 @@ void ClientManager::listenForClients()
             auto [newPublisher, newPublisherPort] = bind();
             auto [newSubscriber, newSubscriberPort] = connect();
 
-            std::cout << "New client connected: " << topic << " - on publishing port " << newPublisherPort << " and subscription port " << newSubscriberPort << std::endl;
+            LOG_INFO("New client connected: {0} - on publishing port {1} and subscription port {2}", topic, newPublisherPort, newSubscriberPort);
 
             m_Publishers[portPublisher].send(zmq::buffer(topic), zmq::send_flags::sndmore);
             m_Publishers[portPublisher].send(zmq::buffer(std::to_string(newSubscriberPort)), zmq::send_flags::sndmore);
@@ -212,13 +212,13 @@ void ClientManager::listenForClients()
         }
     }
     
-    std::cout << "Terminating Listener" << std::endl;
+    LOG_INFO("Terminating Listener");
 }
 
 // Prepare our context and the ClientManager
 ClientManager::ClientManager() : m_ClientTerminated(false), m_PortManager(s_StaringPort, 20), m_Context(1)
 {
-    std::cout << "Initializing Client Manager" << std::endl;
+    LOG_INFO("Initializing Client Manager");
 }
 
 ClientManager::~ClientManager()
@@ -233,22 +233,21 @@ void ClientManager::run()
     XPlaneBeaconListener::getInstance()->registerNotificationCallback(std::bind(&ClientManager::receiverBeaconCallback, this, std::placeholders::_1, std::placeholders::_2));
     XPlaneBeaconListener::getInstance()->setDebug(0);
 
-    //std::cout << "Press Control-C to abort." << std::endl;
     // Search for XPlane
     while (!m_Found) 
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // 1000ms
-        std::cout << "Looking for XPlane..." << std::endl;
+        LOG_INFO("Looking for XPlane...");
 
     }
-    std::cout << "Found server " << m_Host << ":" << m_Port << std::endl;
+    LOG_INFO("Found server {0}:{1}", m_Host, m_Port);
 
     // Definitions
     std::string dataRefsFileName = "Subscriptions.txt";
     std::unordered_map<std::string, int> dataRefsMap;
 
     // Init the Xplane UDP Client
-    std::cout << "Initializing XPlane UDP Client" << std::endl;
+    LOG_INFO("Initializing XPlane UDP Client");
     m_XPlaneClient = new XPlaneUDPClient(m_Host, m_Port, 
         std::bind(&ClientManager::receiverCallbackFloat, this, std::placeholders::_1, std::placeholders::_2),
         std::bind(&ClientManager::receiverCallbackString, this, std::placeholders::_1, std::placeholders::_2)
@@ -258,14 +257,13 @@ void ClientManager::run()
 
     // Read in the dataref Values
     int result = readDataRefsFromFile(dataRefsFileName, m_DataRefs);
-    if (result != 0) std::cout << "Subscriptions.txt missing or unable to open." << std::endl;
-
+    if (result != 0) LOG_ERROR("Subscriptions.txt missing or unable to open file");
     m_ipcl_labels.assign("ipcl/");
 
     // Create subscriptions
     for (auto const& [key, val] : dataRefsMap)
     {
-        std::cout << "Creating subscription for " << key << " with min frequency of " << val << std::endl;
+        LOG_INFO("Creating subscription for {0} with min frequency of {1}", key, val);
         if (!std::regex_search(key, m_ipcl_labels))
         {
             m_XPlaneClient->subscribeDataRef(key, val);
@@ -319,7 +317,7 @@ std::pair<size_t, unsigned int> ClientManager::bind()
         fullAddress = m_Address + std::to_string(port);
         returnValue = m_Publishers[publisher].bind(fullAddress);
         m_PortManager.occupyPort(port);
-        std::cout << "New publisher bound to port: " << port << std::endl;
+        LOG_INFO("New publisher bound to port: {0}", port);
     }
     m_PublishersAddress[publisher] = fullAddress;
     m_PublishersPorts[publisher] = port;
@@ -347,7 +345,7 @@ std::pair<size_t, unsigned int> ClientManager::connect()
         fullAddress = m_Address + std::to_string(port);
         returnValue = m_Subscribers[subscriber].connect(m_Address + std::to_string(port));
         m_PortManager.occupyPort(port);
-        std::cout << "New subscriber connected to port: " << port << std::endl;
+        LOG_INFO("New subscriber connected to port: {0}", port);
     }
     m_SubscribersAddress[subscriber] = fullAddress;
     m_SubscriberPorts[subscriber] = port;
@@ -389,7 +387,7 @@ int ClientManager::readDataRefsFromFile(const std::string& fileName, std::unorde
     }
     else
     {
-        std::cout << "Unable to open file" << std::endl;
+        LOG_ERROR("Unable to open file");
         return 1;
     }
 
