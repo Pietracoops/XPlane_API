@@ -256,7 +256,7 @@ void ClientManager::run()
     m_XPlaneClient->setDebug(0);
 
     // Read in the dataref Values
-    int result = readDataRefsFromFile(dataRefsFileName, m_DataRefs);
+    int result = readDataRefsFromFile(dataRefsFileName, dataRefsMap);
     if (result != 0) LOG_ERROR("Subscriptions.txt missing or unable to open file");
     m_ipcl_labels.assign("ipcl/");
 
@@ -361,7 +361,7 @@ void ClientManager::disconnect(size_t subscriber_index)
 }
 
 
-int ClientManager::readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::string, DataRef>& map)
+int ClientManager::readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::string, int>& map)
 {
 
     std::string line;
@@ -380,7 +380,7 @@ int ClientManager::readDataRefsFromFile(const std::string& fileName, std::unorde
             std::stringstream ssline(line);
             while (getline(ssline, segment, ';')) seglist.push_back(segment);
 
-            map[seglist[0]] = DataRef(seglist[1], std::chrono::steady_clock::now());
+            map[seglist[0]] = std::stoi(seglist[1]);
             seglist.clear();
         }
         myfile.close();

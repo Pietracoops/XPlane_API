@@ -106,7 +106,7 @@ private:
 
 	void setDataRef(const std::string& dataref, const std::string& value, std::string& response);
 	void terminateWriter(const std::string& topic);
-	int readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::string, DataRef>& map);
+	int readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::string, int>& map);
 
 	size_t storeInDeque(zmq::socket_type socket_type, std::vector<size_t>& free, 
 		std::deque<zmq::socket_t>& deque, 
