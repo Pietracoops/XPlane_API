@@ -4,6 +4,8 @@
 #include <future>
 #include <iostream>
 
+#include <yaml-cpp/yaml.h>
+
 #include "Log.h"
 
 void ClientManager::receiverCallbackFloat(std::string dataref, float value)
@@ -61,51 +63,49 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
 
         std::string topic_found = recv_msgs[0].to_string();
         std::string command = recv_msgs[1].to_string();
-        std::string dref = recv_msgs[2].to_string();
+        std::string label = recv_msgs[2].to_string();
         std::string value = recv_msgs[3].to_string();
 
         if (command == "read")
         {
             std::string response;
-            std::chrono::nanoseconds timeElaspedSeconds;
-            if (m_DataRefs.find(dref) != m_DataRefs.end())
+            std::chrono::nanoseconds timeElaspedNanoSeconds;
+            if (m_LabelsToTag.find(label) != m_LabelsToTag.end())
             {
-                response = m_DataRefs[dref].Value;
-                timeElaspedSeconds = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - m_DataRefs[dref].LastUpdateTime);
+                response = getDataRef(label).Value;
+                timeElaspedNanoSeconds = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - getDataRef(label).LastUpdateTime);
             }
-            else response = "Error: Server is currently not subscribed to " + dref;
+            else response = "Error: Server is currently not subscribed to " + label;
 
             LOG_INFO("READ COMMAND FOUND - {0}: [{1}] {2} VALUE: {3}", topic, recv_msgs[0].to_string(), recv_msgs[1].to_string(), response);
 
             m_Publishers[publisher_index].send(zmq::buffer(topic), zmq::send_flags::sndmore);
             m_Publishers[publisher_index].send(zmq::buffer(response), zmq::send_flags::sndmore);
-            m_Publishers[publisher_index].send(zmq::buffer( std::to_string( timeElaspedSeconds.count() / 1e9 ) ));
+            m_Publishers[publisher_index].send(zmq::buffer( std::to_string(timeElaspedNanoSeconds.count() / 1e9 ) ));
         }
 
         if (command == "set")
         {
             std::string response = "Received";
-            if (m_DataRefs.find(dref) != m_DataRefs.end())
+            if (m_LabelsToTag.find(label) != m_LabelsToTag.end())
             {
             
-                if (std::regex_search(dref, m_ipcl_labels))
-                {
-                    m_DataRefs[dref] = DataRef(value, std::chrono::steady_clock::now());
-                }
+                if (std::regex_search(label, m_IpclLabels)) m_DataRefs[m_LabelsToTag[label]] = DataRef(value, std::chrono::steady_clock::now());
+  
                 else
                 {
                     if (m_Writer.IsCockpitFree)
                     {
                         m_Writer.IsCockpitFree = false;
                         m_Writer.Topic = topic;
-                        setDataRef(dref, value, response);
+                        setDataRef(m_LabelsToTag[label], value, response);
                     }
-                    else if (m_Writer.Topic == topic) setDataRef(dref, value, response);
+                    else if (m_Writer.Topic == topic) setDataRef(m_LabelsToTag[label], value, response);
                     else response = "Error: Cockpit is already in use! Please wait for termination of the current writer";
                 }
 
             }
-            else response = "Error: Server is currently not subscribed to " + dref;
+            else response = "Error: Server is currently not subscribed to " + label;
 
             m_Publishers[publisher_index].send(zmq::buffer(topic), zmq::send_flags::sndmore);
             m_Publishers[publisher_index].send(zmq::buffer(response));
@@ -122,10 +122,7 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
 
         if (command == "command")
         {
-            if (!std::regex_search(dref, m_ipcl_labels))
-            {
-                m_XPlaneClient->sendCommand(dref);
-            }
+            if (!std::regex_search(label, m_IpclLabels)) m_XPlaneClient->sendCommand(m_LabelsToTag[label]);
 
             m_Publishers[publisher_index].send(zmq::buffer(topic), zmq::send_flags::sndmore);
             m_Publishers[publisher_index].send(zmq::buffer("Received"));
@@ -165,8 +162,21 @@ void ClientManager::listenForClients()
     LOG_INFO("Connect to server by assigning client's publisher port to: {0}", sport);
     LOG_INFO("Connect to server by assigning client's subscriber port to: {0}", pport);
 
+    for (auto const& [label, tag] : m_LabelsToTag) m_DataRefLogger << label << ", ";
+    m_DataRefLogger << std::endl;
+
+    std::chrono::steady_clock::time_point time = std::chrono::steady_clock::now();
     while (m_Running)
     {
+        // Log Data
+        std::chrono::seconds secondsElasped = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - time);
+        if (secondsElasped.count() > (long long)m_LoggingFrequency)
+        {
+            time = std::chrono::steady_clock::now();
+            for (auto const& [label, tag] : m_LabelsToTag) m_DataRefLogger << getDataRef(label).Value << ", ";
+            m_DataRefLogger << std::endl;
+        }
+
         // Remove topic
         // Unbind and diconnect sockets used to communicate to disconnected clients
         std::unique_lock lock(m_Mutex);
@@ -216,7 +226,7 @@ void ClientManager::listenForClients()
 }
 
 // Prepare our context and the ClientManager
-ClientManager::ClientManager() : m_ClientTerminated(false), m_PortManager(s_StaringPort, 20), m_Context(1)
+ClientManager::ClientManager() : m_ClientTerminated(false), m_PortManager(s_StaringPort, 20), m_Context(1), m_DataRefLogger("data.log")
 {
     LOG_INFO("Initializing Client Manager");
 }
@@ -243,7 +253,7 @@ void ClientManager::run()
     LOG_INFO("Found server {0}:{1}", m_Host, m_Port);
 
     // Definitions
-    std::string dataRefsFileName = "Subscriptions.txt";
+    std::string dataRefsFileName = "Subscriptions.yaml";
     std::unordered_map<std::string, int> dataRefsMap;
 
     // Init the Xplane UDP Client
@@ -258,13 +268,13 @@ void ClientManager::run()
     // Read in the dataref Values
     int result = readDataRefsFromFile(dataRefsFileName, dataRefsMap);
     if (result != 0) LOG_ERROR("Subscriptions.txt missing or unable to open file");
-    m_ipcl_labels.assign("ipcl/");
+    m_IpclLabels.assign("ipcl/");
 
     // Create subscriptions
     for (auto const& [key, val] : dataRefsMap)
     {
         LOG_INFO("Creating subscription for {0} with min frequency of {1}", key, val);
-        if (!std::regex_search(key, m_ipcl_labels))
+        if (!std::regex_search(key, m_IpclLabels))
         {
             m_XPlaneClient->subscribeDataRef(key, val);
         }
@@ -277,6 +287,7 @@ void ClientManager::run()
 
 bool ClientManager::terminate()
 {
+    m_DataRefLogger.close();
     for (size_t i = 0; i < m_Publishers.size(); ++i) unbind(i);
     for (size_t i = 0; i < m_Subscribers.size(); ++i) disconnect(i);
 
@@ -360,35 +371,19 @@ void ClientManager::disconnect(size_t subscriber_index)
     m_UnusedSubscribers.emplace_back(subscriber_index);
 }
 
-
 int ClientManager::readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::string, int>& map)
 {
-
-    std::string line;
-    std::string segment;
-    std::vector<std::string> seglist;
-
-    std::ifstream myfile(fileName);
-    if (myfile.is_open())
+    YAML::Node subscriptions = YAML::LoadFile(fileName);
+    for (YAML::const_iterator it = subscriptions.begin(); it != subscriptions.end(); ++it)
     {
-        while (getline(myfile, line))
-        {
-            if (line[0] == '#')	// Enable comments in the subscriptions.txt file
-            {
-                continue;
-            }
-            std::stringstream ssline(line);
-            while (getline(ssline, segment, ';')) seglist.push_back(segment);
+        std::string label = it->first.as<std::string>();
+        std::string tag = it->second["tag"].as<std::string>();
+        int frequency = it->second["frequency"].as<int>();
+        LOG_INFO("Label: {0}, Tag: {1}, Frequency: {2}", label, tag, frequency);
 
-            map[seglist[0]] = std::stoi(seglist[1]);
-            seglist.clear();
-        }
-        myfile.close();
-    }
-    else
-    {
-        LOG_ERROR("Unable to open file");
-        return 1;
+        m_LabelsToTag[label] = tag;
+
+        map[tag] = frequency;
     }
 
     return 0;

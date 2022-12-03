@@ -45,6 +45,7 @@ private:
 		DataRef(const std::string& value, const std::chrono::steady_clock::time_point& lastUpdateTime) : Value(value), LastUpdateTime(lastUpdateTime) { }
 	};
 
+	std::unordered_map<std::string, std::string> m_LabelsToTag;
 	std::unordered_map<std::string, DataRef> m_DataRefs;
 
 	XPlaneUDPClient* m_XPlaneClient = nullptr;
@@ -73,7 +74,7 @@ private:
 
 	const std::string m_Address = "tcp://127.0.0.1:";
 
-	std::regex m_ipcl_labels;
+	std::regex m_IpclLabels;
 
 	static constexpr unsigned int s_StaringPort = 5555;
 
@@ -87,6 +88,9 @@ private:
 	};
 
 	std::stack<Client> m_ClientsToRemove;
+
+	unsigned int m_LoggingFrequency = 10;
+	std::ofstream m_DataRefLogger;
 
 public:
 	ClientManager();
@@ -104,6 +108,7 @@ private:
 	void receiverCallbackString(std::string dataref, std::string value);
 	void receiverBeaconCallback(XPlaneBeaconListener::XPlaneServer server, bool exists);
 
+	inline const DataRef& getDataRef(const std::string& label) { return m_DataRefs[m_LabelsToTag[label]]; }
 	void setDataRef(const std::string& dataref, const std::string& value, std::string& response);
 	void terminateWriter(const std::string& topic);
 	int readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::string, int>& map);

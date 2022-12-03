@@ -1,0 +1,24 @@
+dataref1:
+    tag: "sim/aircraft/view/acf_descrip[0][40]"
+    frequency: 10
+    description: "EMPTY"
+dataref2:
+    tag: "sim/cockpit2/switches/landing_lights_on"
+    frequency: 10
+    description: "EMPTY"
+dataref3:
+    tag: "sim/cockpit2/switches/landing_lights_on"
+    frequency: 10
+    description: "EMPTY"
+dataref4:
+    tag: "sim/cockpit2/engine/actuators/throttle_ratio[0]"
+    frequency: 100
+    description: "EMPTY"
+ipcl:
+    tag: "ipcl/deviation_model/value1"
+    frequency: 0
+    description: "EMPTY"
+ipc2:
+    tag: "ipcl/deviation_model/value2"
+    frequency: 0
+    description: "EMPTY"
