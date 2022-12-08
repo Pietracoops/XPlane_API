@@ -19,26 +19,219 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\ImGuiUtility.cpp" />
     <ClCompile Include="src\ClientManager.cpp" />
+    <ClCompile Include="src\Log.cpp" />
     <ClCompile Include="src\PortManager.cpp" />
     <ClCompile Include="src\TestXPlaneUDPClient.cpp" />
+    <ClCompile Include="src\Window.cpp" />
     <ClCompile Include="src\XPlaneBeaconListener.cpp" />
     <ClCompile Include="src\XPlaneUDPClient.cpp" />
     <ClCompile Include="src\XPUtils.cpp" />
+    <ClCompile Include="vendor\imgui\imgui.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_demo.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_draw.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\binary.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\contrib\graphbuilder.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\contrib\graphbuilderadapter.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\convert.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\depthguard.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\directives.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\emit.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\emitfromevents.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\emitter.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\emitterstate.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\emitterutils.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\exceptions.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\exp.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\memory.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\node.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\nodebuilder.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\nodeevents.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\node_data.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\null.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\ostream_wrapper.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\parse.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\parser.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\regex_yaml.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\scanner.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\scanscalar.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\scantag.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\scantoken.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\simplekey.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\singledocparser.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\stream.cpp" />
+    <ClCompile Include="vendor\yaml-cpp\src\tag.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ImGuiUtility.h" />
     <ClInclude Include="libzmq-v142-x64-4_3_4\zmq.h" />
     <ClInclude Include="libzmq-v142-x64-4_3_4\zmq.hpp" />
     <ClInclude Include="libzmq-v142-x64-4_3_4\zmq_addon.hpp" />
     <ClInclude Include="src\ClientManager.h" />
-    <ClInclude Include="src\Logging.h" />
+    <ClInclude Include="src\Log.h" />
     <ClInclude Include="src\PortManager.h" />
+    <ClInclude Include="src\Window.h" />
     <ClInclude Include="src\XPlaneBeaconListener.h" />
     <ClInclude Include="src\XPlaneUDPClient.h" />
     <ClInclude Include="src\XPUtils.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Subscriptions.txt" />
+    <ClInclude Include="vendor\imgui\imconfig.h" />
+    <ClInclude Include="vendor\imgui\imgui.h" />
+    <ClInclude Include="vendor\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="vendor\imgui\imgui_impl_opengl3.h" />
+    <ClInclude Include="vendor\imgui\imgui_internal.h" />
+    <ClInclude Include="vendor\imgui\imstb_rectpack.h" />
+    <ClInclude Include="vendor\imgui\imstb_textedit.h" />
+    <ClInclude Include="vendor\imgui\imstb_truetype.h" />
+    <ClInclude Include="vendor\spdlog\async.h" />
+    <ClInclude Include="vendor\spdlog\async_logger-inl.h" />
+    <ClInclude Include="vendor\spdlog\async_logger.h" />
+    <ClInclude Include="vendor\spdlog\cfg\argv.h" />
+    <ClInclude Include="vendor\spdlog\cfg\env.h" />
+    <ClInclude Include="vendor\spdlog\cfg\helpers-inl.h" />
+    <ClInclude Include="vendor\spdlog\cfg\helpers.h" />
+    <ClInclude Include="vendor\spdlog\cfg\log_levels.h" />
+    <ClInclude Include="vendor\spdlog\common-inl.h" />
+    <ClInclude Include="vendor\spdlog\common.h" />
+    <ClInclude Include="vendor\spdlog\details\backtracer-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\backtracer.h" />
+    <ClInclude Include="vendor\spdlog\details\circular_q.h" />
+    <ClInclude Include="vendor\spdlog\details\console_globals.h" />
+    <ClInclude Include="vendor\spdlog\details\file_helper-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\file_helper.h" />
+    <ClInclude Include="vendor\spdlog\details\fmt_helper.h" />
+    <ClInclude Include="vendor\spdlog\details\log_msg-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\log_msg.h" />
+    <ClInclude Include="vendor\spdlog\details\log_msg_buffer-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\log_msg_buffer.h" />
+    <ClInclude Include="vendor\spdlog\details\mpmc_blocking_q.h" />
+    <ClInclude Include="vendor\spdlog\details\null_mutex.h" />
+    <ClInclude Include="vendor\spdlog\details\os-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\os.h" />
+    <ClInclude Include="vendor\spdlog\details\periodic_worker-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\periodic_worker.h" />
+    <ClInclude Include="vendor\spdlog\details\registry-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\registry.h" />
+    <ClInclude Include="vendor\spdlog\details\synchronous_factory.h" />
+    <ClInclude Include="vendor\spdlog\details\tcp_client-windows.h" />
+    <ClInclude Include="vendor\spdlog\details\tcp_client.h" />
+    <ClInclude Include="vendor\spdlog\details\thread_pool-inl.h" />
+    <ClInclude Include="vendor\spdlog\details\thread_pool.h" />
+    <ClInclude Include="vendor\spdlog\details\windows_include.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bin_to_hex.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\chrono.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\color.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\compile.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\core.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\format-inl.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\format.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\locale.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\ostream.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\posix.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\printf.h" />
+    <ClInclude Include="vendor\spdlog\fmt\bundled\ranges.h" />
+    <ClInclude Include="vendor\spdlog\fmt\fmt.h" />
+    <ClInclude Include="vendor\spdlog\fmt\ostr.h" />
+    <ClInclude Include="vendor\spdlog\formatter.h" />
+    <ClInclude Include="vendor\spdlog\fwd.h" />
+    <ClInclude Include="vendor\spdlog\logger-inl.h" />
+    <ClInclude Include="vendor\spdlog\logger.h" />
+    <ClInclude Include="vendor\spdlog\pattern_formatter-inl.h" />
+    <ClInclude Include="vendor\spdlog\pattern_formatter.h" />
+    <ClInclude Include="vendor\spdlog\sinks\android_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\ansicolor_sink-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\ansicolor_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\base_sink-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\base_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\basic_file_sink-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\basic_file_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\daily_file_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\dist_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\dup_filter_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\msvc_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\null_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\ostream_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\ringbuffer_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\rotating_file_sink-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\rotating_file_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\sink-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\stdout_color_sinks-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\stdout_color_sinks.h" />
+    <ClInclude Include="vendor\spdlog\sinks\stdout_sinks-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\stdout_sinks.h" />
+    <ClInclude Include="vendor\spdlog\sinks\syslog_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\systemd_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\tcp_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\wincolor_sink-inl.h" />
+    <ClInclude Include="vendor\spdlog\sinks\wincolor_sink.h" />
+    <ClInclude Include="vendor\spdlog\sinks\win_eventlog_sink.h" />
+    <ClInclude Include="vendor\spdlog\spdlog-inl.h" />
+    <ClInclude Include="vendor\spdlog\spdlog.h" />
+    <ClInclude Include="vendor\spdlog\tweakme.h" />
+    <ClInclude Include="vendor\spdlog\version.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\anchor.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\binary.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\contrib\anchordict.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\contrib\graphbuilder.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\depthguard.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\dll.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\emitfromevents.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\emitter.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\emitterdef.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\emittermanip.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\emitterstyle.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\eventhandler.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\exceptions.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\mark.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\convert.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\detail\impl.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\detail\iterator.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\detail\iterator_fwd.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\detail\memory.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\detail\node.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\detail\node_data.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\detail\node_iterator.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\detail\node_ref.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\emit.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\impl.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\iterator.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\node.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\parse.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\ptr.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\node\type.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\noexcept.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\null.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\ostream_wrapper.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\parser.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\stlemitter.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\traits.h" />
+    <ClInclude Include="vendor\yaml-cpp\include\yaml-cpp\yaml.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\collectionstack.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\contrib\graphbuilderadapter.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\directives.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\emitterstate.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\emitterutils.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\exp.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\indentation.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\nodebuilder.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\nodeevents.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\ptr_vector.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\regeximpl.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\regex_yaml.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\scanner.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\scanscalar.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\scantag.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\setting.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\singledocparser.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\stream.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\streamcharsource.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\stringsource.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\tag.h" />
+    <ClInclude Include="vendor\yaml-cpp\src\token.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -145,13 +338,13 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalUsingDirectories>
       </AdditionalUsingDirectories>
-      <AdditionalIncludeDirectories>$(ProjectDir)src\;$(ProjectDir)vendor\libzmq-v142-x64-4_3_4;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Glad\include\;$(ProjectDir)src;$(ProjectDir)vendor;$(ProjectDir)vendor\yaml-cpp\include;$(ProjectDir)vendor\libzmq-v142-x64-4_3_4;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libzmq-v142-mt-4_3_4.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;Glad.lib;libzmq-v142-mt-4_3_4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\lib\;$(SolutionDir)bin\$(Configuration)-$(Platform)\Glad\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /E /Y "$(ProjectDir)libsodium.dll" "$(TargetDir)"
@@ -167,7 +360,7 @@ xcopy /E /Y "$(ProjectDir)Subscriptions.txt" "$(TargetDir)"</Command>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINSOCK_DEPRECATED_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_CONSOLE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)src\;$(ProjectDir)vendor\libzmq-v142-x64-4_3_4;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Glad\include\;$(ProjectDir)src;$(ProjectDir)vendor;$(ProjectDir)vendor\yaml-cpp\include;$(ProjectDir)vendor\libzmq-v142-x64-4_3_4;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -175,8 +368,8 @@ xcopy /E /Y "$(ProjectDir)Subscriptions.txt" "$(TargetDir)"</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libzmq-v142-mt-4_3_4.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;Glad.lib;libzmq-v142-mt-4_3_4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\lib\;$(SolutionDir)bin\$(Configuration)-$(Platform)\Glad\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /E /Y "$(ProjectDir)libsodium.dll" "$(TargetDir)"

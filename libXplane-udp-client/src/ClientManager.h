@@ -8,6 +8,7 @@
 
 #include <chrono>
 #include <deque>
+#include <future>
 #include <shared_mutex>
 #include <stack>
 #include <string>
@@ -15,11 +16,16 @@
 #include <vector>
 #include <regex>
 
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
+
 #include "zmq.hpp"
 #include "zmq_addon.hpp"
 
 #include "PortManager.h"
 
+#include "Window.h"
 #include "XPlaneBeaconListener.h"
 #include "XPlaneUDPClient.h"
 #include "XPUtils.h"
@@ -45,6 +51,7 @@ private:
 		DataRef(const std::string& value, const std::chrono::steady_clock::time_point& lastUpdateTime) : Value(value), LastUpdateTime(lastUpdateTime) { }
 	};
 
+	std::unordered_map<std::string, std::string> m_LabelsToTag;
 	std::unordered_map<std::string, DataRef> m_DataRefs;
 
 	XPlaneUDPClient* m_XPlaneClient = nullptr;
@@ -73,7 +80,7 @@ private:
 
 	const std::string m_Address = "tcp://127.0.0.1:";
 
-	std::regex m_ipcl_labels;
+	std::regex m_IpclLabels;
 
 	static constexpr unsigned int s_StaringPort = 5555;
 
@@ -88,6 +95,15 @@ private:
 
 	std::stack<Client> m_ClientsToRemove;
 
+	unsigned int m_LoggingFrequency = 10;
+	std::ofstream m_DataRefLogger;
+
+	std::unique_ptr<Window> m_Window;
+	ImGuiWindowFlags m_WindowFlags;
+
+	const char* m_ApplicationName = "PilotAI API GUI";
+	float m_ColumnWidth = 250.0f;
+
 public:
 	ClientManager();
 	~ClientManager();
@@ -97,16 +113,20 @@ public:
 	bool terminate();
 
 private:
-	void listenForClients();
+	void logValueOfLabels(std::chrono::steady_clock::time_point& time);
+	void removeClients();
+	void manageNewClients(size_t portPublisher, size_t subscriberOfClients, std::vector<std::future<void>>& threads);
 	void attachToClient(std::string topic, size_t publisher_index, size_t subscriber_index);
+	void listenForClients();
 
 	void receiverCallbackFloat(std::string dataref, float value);
 	void receiverCallbackString(std::string dataref, std::string value);
 	void receiverBeaconCallback(XPlaneBeaconListener::XPlaneServer server, bool exists);
 
+	inline const DataRef& getDataRef(const std::string& label) { return m_DataRefs[m_LabelsToTag[label]]; }
 	void setDataRef(const std::string& dataref, const std::string& value, std::string& response);
 	void terminateWriter(const std::string& topic);
-	int readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::string, DataRef>& map);
+	int readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::string, int>& map);
 
 	size_t storeInDeque(zmq::socket_type socket_type, std::vector<size_t>& free, 
 		std::deque<zmq::socket_t>& deque, 
@@ -125,5 +145,6 @@ private:
 
 	void disconnect(size_t subscriber_index);
 
+	void createWindow();
 };
 #endif /* CLIENTMANAGER_SRC_CLIENTMANAGER_H_ */

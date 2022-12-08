@@ -3,6 +3,8 @@
 #include <iostream>
 #include <future>
 
+#include "Log.h"
+
 using namespace std;
 bool application_terminated = false;
 BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
@@ -26,7 +28,6 @@ int main() {
 
 	server.run();
 
-	server.terminate();
 	std::cout << "Server terminated..." << std::endl;
 
 	return 1;

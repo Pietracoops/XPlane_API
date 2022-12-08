@@ -1,25 +1,52 @@
 #include "ClientManager.h"
 
-#include <atomic>
-#include <functional>
-#include <future>
 #include <iostream>
+
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+
+#include <yaml-cpp/yaml.h>
+
+#include "ImGuiUtility.h"
+#include "Log.h"
+
+// Prepare our context and the ClientManager
+ClientManager::ClientManager() : m_ClientTerminated(false), m_PortManager(s_StaringPort, 20), m_Context(1), m_DataRefLogger("data.log")
+{
+    Log::Init();
+
+    LOG_INFO("Initializing Client Manager");
+}
+
+ClientManager::~ClientManager()
+{
+    m_DataRefLogger.close();
+    for (size_t i = 0; i < m_Publishers.size(); ++i) unbind(i);
+    for (size_t i = 0; i < m_Subscribers.size(); ++i) disconnect(i);
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
+    m_Running = false;
+}
 
 void ClientManager::receiverCallbackFloat(std::string dataref, float value)
 {
-    std::cout << "receiverCallbackFloat got [" << dataref << "] and [" << value << "]" << std::endl;
+    LOG_INFO("receiverCallbackFloat got [{0}] and [{1}]", dataref, value);
     m_DataRefs[dataref] = DataRef(std::to_string(value), std::chrono::steady_clock::now());
 }
 
 void ClientManager::receiverCallbackString(std::string dataref, std::string value)
 {
-    std::cout << "receiverCallbackString got [" << dataref << "] and [" << value << "]" << std::endl;
+    LOG_INFO("receiverCallbackFloat got [{0}] and [{1}]", dataref, value);
     m_DataRefs[dataref] = DataRef(value, std::chrono::steady_clock::now());
 }
 
 void ClientManager::receiverBeaconCallback(XPlaneBeaconListener::XPlaneServer server, bool exists)
 {
-    std::cout << "receiverBeaconCallback got [" << server.toString() << " is " << (exists ? "alive" : "dead") << "]" << std::endl;
+    LOG_INFO("receiverBeaconCallback got [{0} is {1}]", server.toString(), exists ? "alive" : "dead");
     m_Host = server.host;
     m_Port = server.receivePort;
     m_Found = true;
@@ -40,6 +67,69 @@ void ClientManager::terminateWriter(const std::string& topic)
     }
 }
 
+void ClientManager::logValueOfLabels(std::chrono::steady_clock::time_point& time)
+{
+    // Log Data
+    std::chrono::seconds secondsElasped = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - time);
+    if (secondsElasped.count() > (long long)m_LoggingFrequency)
+    {
+        time = std::chrono::steady_clock::now();
+        for (auto const& [label, tag] : m_LabelsToTag) m_DataRefLogger << getDataRef(label).Value << ", ";
+        m_DataRefLogger << std::endl;
+    }
+}
+
+void ClientManager::removeClients()
+{
+    // Remove topic
+    // Unbind and diconnect sockets used to communicate to disconnected clients
+    std::unique_lock lock(m_Mutex);
+    while (!m_ClientsToRemove.empty())
+    {
+        for (size_t i = 0; i < m_ClientTopics.size(); ++i)
+        {
+            if (m_ClientTopics[i] == m_ClientsToRemove.top().Topic)
+            {
+                m_ClientTopics.erase(m_ClientTopics.begin() + i);
+                break;
+            }
+        }
+        unbind(m_ClientsToRemove.top().Publisher);
+        disconnect(m_ClientsToRemove.top().Subscriber);
+
+        m_ClientsToRemove.pop();
+    }
+}
+
+void ClientManager::manageNewClients(size_t portPublisher, size_t subscriberOfClients, std::vector<std::future<void>>& threads)
+{
+    // Receive all parts of the message
+    std::vector<zmq::message_t> recv_msgs;
+    zmq::recv_result_t result = zmq::recv_multipart(m_Subscribers[subscriberOfClients], std::back_inserter(recv_msgs), zmq::recv_flags::dontwait);
+    if (result)
+    {
+        std::string topic = recv_msgs[0].to_string();
+
+        LOG_INFO("Received topic: {0} with command: {1}", topic, recv_msgs[1].to_string());
+
+        if (std::find(m_ClientTopics.begin(), m_ClientTopics.end(), topic) == m_ClientTopics.end())
+        {
+            m_ClientTopics.emplace_back(topic);
+
+            auto [newPublisher, newPublisherPort] = bind();
+            auto [newSubscriber, newSubscriberPort] = connect();
+
+            LOG_INFO("New client connected: {0} - on publishing port {1} and subscription port {2}", topic, newPublisherPort, newSubscriberPort);
+
+            m_Publishers[portPublisher].send(zmq::buffer(topic), zmq::send_flags::sndmore);
+            m_Publishers[portPublisher].send(zmq::buffer(std::to_string(newSubscriberPort)), zmq::send_flags::sndmore);
+            m_Publishers[portPublisher].send(zmq::buffer(std::to_string(newPublisherPort)));
+
+            threads.push_back(std::async(std::launch::async, &ClientManager::attachToClient, this, m_ClientTopics.back(), newPublisher, newSubscriber)); // push it back into the thread vector
+        }
+    }
+}
+
 void ClientManager::attachToClient(std::string topic, size_t publisher_index, size_t subscriber_index)
 {    
     m_Subscribers[subscriber_index].set(zmq::sockopt::subscribe, topic);
@@ -54,57 +144,55 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
         if (recv_msgs.size() != 4)
         {
             // Respond with malformed message and continue
-            std::cout << "====================Too small==========================" << recv_msgs.size() << std::endl;
+            LOG_WARN("Message: [{0}] is too small", recv_msgs.size());
             continue;
         }
 
         std::string topic_found = recv_msgs[0].to_string();
         std::string command = recv_msgs[1].to_string();
-        std::string dref = recv_msgs[2].to_string();
+        std::string label = recv_msgs[2].to_string();
         std::string value = recv_msgs[3].to_string();
 
         if (command == "read")
         {
             std::string response;
-            std::chrono::nanoseconds timeElaspedSeconds;
-            if (m_DataRefs.find(dref) != m_DataRefs.end())
+            std::chrono::nanoseconds timeElaspedNanoSeconds;
+            if (m_LabelsToTag.find(label) != m_LabelsToTag.end())
             {
-                response = m_DataRefs[dref].Value;
-                timeElaspedSeconds = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - m_DataRefs[dref].LastUpdateTime);
+                response = getDataRef(label).Value;
+                timeElaspedNanoSeconds = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - getDataRef(label).LastUpdateTime);
             }
-            else response = "Error: Server is currently not subscribed to " + dref;
+            else response = "Error: Server is currently not subscribed to " + label;
 
-            std::cout << "READ COMMAND FOUND - " << topic << ": [" << recv_msgs[0].to_string() << "] " << recv_msgs[1].to_string() << " VALUE: " << response << std::endl;
+            LOG_INFO("READ COMMAND FOUND - {0}: [{1}] {2} VALUE: {3}", topic, recv_msgs[0].to_string(), recv_msgs[1].to_string(), response);
 
             m_Publishers[publisher_index].send(zmq::buffer(topic), zmq::send_flags::sndmore);
             m_Publishers[publisher_index].send(zmq::buffer(response), zmq::send_flags::sndmore);
-            m_Publishers[publisher_index].send(zmq::buffer( std::to_string( timeElaspedSeconds.count() / 1e9 ) ));
+            m_Publishers[publisher_index].send(zmq::buffer( std::to_string(timeElaspedNanoSeconds.count() / 1e9 ) ));
         }
 
         if (command == "set")
         {
             std::string response = "Received";
-            if (m_DataRefs.find(dref) != m_DataRefs.end())
+            if (m_LabelsToTag.find(label) != m_LabelsToTag.end())
             {
             
-                if (std::regex_search(dref, m_ipcl_labels))
-                {
-                    m_DataRefs[dref] = DataRef(value, std::chrono::steady_clock::now());
-                }
+                if (std::regex_search(label, m_IpclLabels)) m_DataRefs[m_LabelsToTag[label]] = DataRef(value, std::chrono::steady_clock::now());
+  
                 else
                 {
                     if (m_Writer.IsCockpitFree)
                     {
                         m_Writer.IsCockpitFree = false;
                         m_Writer.Topic = topic;
-                        setDataRef(dref, value, response);
+                        setDataRef(m_LabelsToTag[label], value, response);
                     }
-                    else if (m_Writer.Topic == topic) setDataRef(dref, value, response);
+                    else if (m_Writer.Topic == topic) setDataRef(m_LabelsToTag[label], value, response);
                     else response = "Error: Cockpit is already in use! Please wait for termination of the current writer";
                 }
 
             }
-            else response = "Error: Server is currently not subscribed to " + dref;
+            else response = "Error: Server is currently not subscribed to " + label;
 
             m_Publishers[publisher_index].send(zmq::buffer(topic), zmq::send_flags::sndmore);
             m_Publishers[publisher_index].send(zmq::buffer(response));
@@ -121,10 +209,7 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
 
         if (command == "command")
         {
-            if (!std::regex_search(dref, m_ipcl_labels))
-            {
-                m_XPlaneClient->sendCommand(dref);
-            }
+            if (!std::regex_search(label, m_IpclLabels)) m_XPlaneClient->sendCommand(m_LabelsToTag[label]);
 
             m_Publishers[publisher_index].send(zmq::buffer(topic), zmq::send_flags::sndmore);
             m_Publishers[publisher_index].send(zmq::buffer("Received"));
@@ -137,21 +222,20 @@ void ClientManager::attachToClient(std::string topic, size_t publisher_index, si
             break;
         }
 
-        std::cout << "Thread topic - " << topic << ": [" << recv_msgs[0].to_string() << "] " << recv_msgs[1].to_string() << std::endl;
+        LOG_INFO("Thread topic - {0}: [{1}] {2}", topic, recv_msgs[0].to_string(), recv_msgs[1].to_string());
     }
 
     terminateWriter(topic);
 
     std::unique_lock lock(m_Mutex);
     m_ClientsToRemove.push(Client(topic, publisher_index, subscriber_index));
-    std::cout << "Terminating connection for topic: " << topic << std::endl;
+    LOG_INFO("Terminating connection for topic: {0}", topic);
 }
 
 void ClientManager::listenForClients()
 {
     // Main thread to listen (subscriber) and send m_Port to client (publisher)
-    std::cout << std::endl;
-    std::cout << "Running Listener" << std::endl;
+    LOG_INFO("Running Listener");
     // Vector to hold all threads for each new client
     std::vector<std::future<void>> threads;
 
@@ -162,68 +246,70 @@ void ClientManager::listenForClients()
     // Reader
     m_Subscribers[subscriberOfClients].set(zmq::sockopt::subscribe, "");
 
-    std::cout << "Connect to server by assigning client's publisher port to: " << sport << std::endl;
-    std::cout << "Connect to server by assigning client's subscriber port to: " << pport << std::endl;
+    LOG_INFO("Connect to server by assigning client's publisher port to: {0}", sport);
+    LOG_INFO("Connect to server by assigning client's subscriber port to: {0}", pport);
 
-    while (m_Running)
+    for (auto const& [label, tag] : m_LabelsToTag) m_DataRefLogger << label << ", ";
+    m_DataRefLogger << std::endl;
+
+    std::chrono::steady_clock::time_point time = std::chrono::steady_clock::now();
+    while (m_Running && !glfwWindowShouldClose(m_Window->getGLFWWindow()))
     {
-        // Remove topic
-        // Unbind and diconnect sockets used to communicate to disconnected clients
-        std::unique_lock lock(m_Mutex);
-        while (!m_ClientsToRemove.empty())
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        logValueOfLabels(time);
+        removeClients();
+        manageNewClients(portPublisher, subscriberOfClients, threads);
+
+        ImGuiUtility::createImGuiDockspace([&]()
         {
+            ImGui::Begin("Settings", nullptr, m_WindowFlags);
+            ImGuiUtility::drawImGuiLabelWithColumn("Tip:", [&]()
+                {
+                    ImGui::Text("%s", "CTRL + Click to turn the slider into an input");
+                }, 250.0f);
+            ImGuiUtility::drawImGuiLabelWithColumn("Column Width", [&]()
+                {
+                    ImGui::SliderFloat("##", &m_ColumnWidth, 100.0f, 400.0f);
+                }, 250.0f);
+            ImGui::End();
+
+            ImGui::Begin("Labels and Values", nullptr, m_WindowFlags);
+            for (auto const& [label, tag] : m_LabelsToTag)
+            {
+                const char* c_str_label = label.c_str();
+                const char* c_str_value = getDataRef(label).Value.c_str();
+                ImGuiUtility::drawImGuiLabelWithColumn(c_str_label, [&]()
+                    {
+                        ImGui::Text("%s", c_str_value);
+                    }, m_ColumnWidth);
+            }   
+            ImGui::End();
+
+            ImGui::Begin("Connected Clients", nullptr, m_WindowFlags);
             for (size_t i = 0; i < m_ClientTopics.size(); ++i)
             {
-                if (m_ClientTopics[i] == m_ClientsToRemove.top().Topic)
-                {
-                    m_ClientTopics.erase(m_ClientTopics.begin() + i);
-                    break;
-                }
+                const char* topic = m_ClientTopics[i].c_str();
+                const char* publisher = m_PublishersAddress[i].c_str();
+                const char* subscriber = m_SubscribersAddress[i].c_str();
+                ImGuiUtility::drawImGuiLabelWithColumn(topic, [&]()
+                    {
+                        ImGui::Text("%s: %s", "Publisher address", publisher);
+                        ImGui::Text("%s: %s", "Subscriber address", subscriber);
+                    }, m_ColumnWidth);
             }
-            unbind(m_ClientsToRemove.top().Publisher);
-            disconnect(m_ClientsToRemove.top().Subscriber);
+            ImGui::End();
+        });
 
-            m_ClientsToRemove.pop();
-        }
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        // Receive all parts of the message
-        std::vector<zmq::message_t> recv_msgs;
-        zmq::recv_result_t result = zmq::recv_multipart(m_Subscribers[subscriberOfClients], std::back_inserter(recv_msgs), zmq::recv_flags::dontwait);
-        if (!result) continue;
-
-        std::string topic = recv_msgs[0].to_string();
-
-        std::cout << "Received topic: " << topic << " with command: " << recv_msgs[1].to_string() << std::endl;
-    
-        if (std::find(m_ClientTopics.begin(), m_ClientTopics.end(), topic) == m_ClientTopics.end())
-        {
-            m_ClientTopics.emplace_back(topic);
-
-            auto [newPublisher, newPublisherPort] = bind();
-            auto [newSubscriber, newSubscriberPort] = connect();
-
-            std::cout << "New client connected: " << topic << " - on publishing port " << newPublisherPort << " and subscription port " << newSubscriberPort << std::endl;
-
-            m_Publishers[portPublisher].send(zmq::buffer(topic), zmq::send_flags::sndmore);
-            m_Publishers[portPublisher].send(zmq::buffer(std::to_string(newSubscriberPort)), zmq::send_flags::sndmore);
-            m_Publishers[portPublisher].send(zmq::buffer(std::to_string(newPublisherPort)));
-            
-            threads.push_back(std::async(std::launch::async, &ClientManager::attachToClient, this, m_ClientTopics.back(), newPublisher, newSubscriber)); // push it back into the thread vector
-        }
+        m_Window->onUpdate();
     }
     
-    std::cout << "Terminating Listener" << std::endl;
-}
-
-// Prepare our context and the ClientManager
-ClientManager::ClientManager() : m_ClientTerminated(false), m_PortManager(s_StaringPort, 20), m_Context(1)
-{
-    std::cout << "Initializing Client Manager" << std::endl;
-}
-
-ClientManager::~ClientManager()
-{
-    terminate();
+    LOG_INFO("Terminating Listener");
 }
 
 void ClientManager::run()
@@ -233,22 +319,21 @@ void ClientManager::run()
     XPlaneBeaconListener::getInstance()->registerNotificationCallback(std::bind(&ClientManager::receiverBeaconCallback, this, std::placeholders::_1, std::placeholders::_2));
     XPlaneBeaconListener::getInstance()->setDebug(0);
 
-    //std::cout << "Press Control-C to abort." << std::endl;
     // Search for XPlane
     while (!m_Found) 
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // 1000ms
-        std::cout << "Looking for XPlane..." << std::endl;
+        LOG_INFO("Looking for XPlane...");
 
     }
-    std::cout << "Found server " << m_Host << ":" << m_Port << std::endl;
+    LOG_INFO("Found server {0}:{1}", m_Host, m_Port);
 
     // Definitions
-    std::string dataRefsFileName = "Subscriptions.txt";
+    std::string dataRefsFileName = "Subscriptions.yaml";
     std::unordered_map<std::string, int> dataRefsMap;
 
     // Init the Xplane UDP Client
-    std::cout << "Initializing XPlane UDP Client" << std::endl;
+    LOG_INFO("Initializing XPlane UDP Client");
     m_XPlaneClient = new XPlaneUDPClient(m_Host, m_Port, 
         std::bind(&ClientManager::receiverCallbackFloat, this, std::placeholders::_1, std::placeholders::_2),
         std::bind(&ClientManager::receiverCallbackString, this, std::placeholders::_1, std::placeholders::_2)
@@ -257,33 +342,24 @@ void ClientManager::run()
     m_XPlaneClient->setDebug(0);
 
     // Read in the dataref Values
-    int result = readDataRefsFromFile(dataRefsFileName, m_DataRefs);
-    if (result != 0) std::cout << "Subscriptions.txt missing or unable to open." << std::endl;
-
-    m_ipcl_labels.assign("ipcl/");
+    int result = readDataRefsFromFile(dataRefsFileName, dataRefsMap);
+    if (result != 0) LOG_ERROR("Subscriptions.txt missing or unable to open file");
+    m_IpclLabels.assign("ipcl/");
 
     // Create subscriptions
     for (auto const& [key, val] : dataRefsMap)
     {
-        std::cout << "Creating subscription for " << key << " with min frequency of " << val << std::endl;
-        if (!std::regex_search(key, m_ipcl_labels))
+        LOG_INFO("Creating subscription for {0} with min frequency of {1}", key, val);
+        if (!std::regex_search(key, m_IpclLabels))
         {
             m_XPlaneClient->subscribeDataRef(key, val);
         }
         
     }
 
+    createWindow();
     listenForClients();
     m_ClientTerminated = true;
-}
-
-bool ClientManager::terminate()
-{
-    for (size_t i = 0; i < m_Publishers.size(); ++i) unbind(i);
-    for (size_t i = 0; i < m_Subscribers.size(); ++i) disconnect(i);
-
-    m_Running = false;
-    return m_ClientTerminated;
 }
 
 size_t ClientManager::storeInDeque(zmq::socket_type socket_type, std::vector<size_t>& free, 
@@ -319,7 +395,7 @@ std::pair<size_t, unsigned int> ClientManager::bind()
         fullAddress = m_Address + std::to_string(port);
         returnValue = m_Publishers[publisher].bind(fullAddress);
         m_PortManager.occupyPort(port);
-        std::cout << "New publisher bound to port: " << port << std::endl;
+        LOG_INFO("New publisher bound to port: {0}", port);
     }
     m_PublishersAddress[publisher] = fullAddress;
     m_PublishersPorts[publisher] = port;
@@ -347,7 +423,7 @@ std::pair<size_t, unsigned int> ClientManager::connect()
         fullAddress = m_Address + std::to_string(port);
         returnValue = m_Subscribers[subscriber].connect(m_Address + std::to_string(port));
         m_PortManager.occupyPort(port);
-        std::cout << "New subscriber connected to port: " << port << std::endl;
+        LOG_INFO("New subscriber connected to port: {0}", port);
     }
     m_SubscribersAddress[subscriber] = fullAddress;
     m_SubscriberPorts[subscriber] = port;
@@ -362,35 +438,43 @@ void ClientManager::disconnect(size_t subscriber_index)
     m_UnusedSubscribers.emplace_back(subscriber_index);
 }
 
-
-int ClientManager::readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::string, DataRef>& map)
+void ClientManager::createWindow()
 {
+    m_Window = std::unique_ptr<Window>(Window::Create({ m_ApplicationName, 1080, 720 }));
 
-    std::string line;
-    std::string segment;
-    std::vector<std::string> seglist;
+    if (m_Window->getStatus() == 0) LOG_ERROR("Glad Init Error!");
 
-    std::ifstream myfile(fileName);
-    if (myfile.is_open())
+#ifdef _DEBUG
+    LOG_INFO("OpenGL version: {0}", glGetString(GL_VERSION));
+#endif
+
+    const char* glsl_version = "#version 130";
+    ImGui::CreateContext();
+    ImGui_ImplGlfw_InitForOpenGL(m_Window->getGLFWWindow(), true);
+    ImGui_ImplOpenGL3_Init(glsl_version);
+    ImGui::StyleColorsDark();
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+    //m_WindowFlags |= ImGuiWindowFlags_NoMove;
+    m_WindowFlags |= ImGuiWindowFlags_NoBackground;
+    m_WindowFlags |= ImGuiWindowFlags_NoCollapse;
+}
+
+int ClientManager::readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::string, int>& map)
+{
+    YAML::Node subscriptions = YAML::LoadFile(fileName);
+    for (YAML::const_iterator it = subscriptions.begin(); it != subscriptions.end(); ++it)
     {
-        while (getline(myfile, line))
-        {
-            if (line[0] == '#')	// Enable comments in the subscriptions.txt file
-            {
-                continue;
-            }
-            std::stringstream ssline(line);
-            while (getline(ssline, segment, ';')) seglist.push_back(segment);
+        std::string label = it->first.as<std::string>();
+        std::string tag = it->second["tag"].as<std::string>();
+        int frequency = it->second["frequency"].as<int>();
+        LOG_INFO("Label: {0}, Tag: {1}, Frequency: {2}", label, tag, frequency);
 
-            map[seglist[0]] = DataRef(seglist[1], std::chrono::steady_clock::now());
-            seglist.clear();
-        }
-        myfile.close();
-    }
-    else
-    {
-        std::cout << "Unable to open file" << std::endl;
-        return 1;
+        m_LabelsToTag[label] = tag;
+
+        map[tag] = frequency;
     }
 
     return 0;
