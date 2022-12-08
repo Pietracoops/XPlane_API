@@ -19,13 +19,21 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\ImGuiUtility.cpp" />
     <ClCompile Include="src\ClientManager.cpp" />
     <ClCompile Include="src\Log.cpp" />
     <ClCompile Include="src\PortManager.cpp" />
     <ClCompile Include="src\TestXPlaneUDPClient.cpp" />
+    <ClCompile Include="src\Window.cpp" />
     <ClCompile Include="src\XPlaneBeaconListener.cpp" />
     <ClCompile Include="src\XPlaneUDPClient.cpp" />
     <ClCompile Include="src\XPUtils.cpp" />
+    <ClCompile Include="vendor\imgui\imgui.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_demo.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_draw.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_widgets.cpp" />
     <ClCompile Include="vendor\yaml-cpp\src\binary.cpp" />
     <ClCompile Include="vendor\yaml-cpp\src\contrib\graphbuilder.cpp" />
     <ClCompile Include="vendor\yaml-cpp\src\contrib\graphbuilderadapter.cpp" />
@@ -59,15 +67,25 @@
     <ClCompile Include="vendor\yaml-cpp\src\tag.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ImGuiUtility.h" />
     <ClInclude Include="libzmq-v142-x64-4_3_4\zmq.h" />
     <ClInclude Include="libzmq-v142-x64-4_3_4\zmq.hpp" />
     <ClInclude Include="libzmq-v142-x64-4_3_4\zmq_addon.hpp" />
     <ClInclude Include="src\ClientManager.h" />
     <ClInclude Include="src\Log.h" />
     <ClInclude Include="src\PortManager.h" />
+    <ClInclude Include="src\Window.h" />
     <ClInclude Include="src\XPlaneBeaconListener.h" />
     <ClInclude Include="src\XPlaneUDPClient.h" />
     <ClInclude Include="src\XPUtils.h" />
+    <ClInclude Include="vendor\imgui\imconfig.h" />
+    <ClInclude Include="vendor\imgui\imgui.h" />
+    <ClInclude Include="vendor\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="vendor\imgui\imgui_impl_opengl3.h" />
+    <ClInclude Include="vendor\imgui\imgui_internal.h" />
+    <ClInclude Include="vendor\imgui\imstb_rectpack.h" />
+    <ClInclude Include="vendor\imgui\imstb_textedit.h" />
+    <ClInclude Include="vendor\imgui\imstb_truetype.h" />
     <ClInclude Include="vendor\spdlog\async.h" />
     <ClInclude Include="vendor\spdlog\async_logger-inl.h" />
     <ClInclude Include="vendor\spdlog\async_logger.h" />
@@ -320,13 +338,13 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalUsingDirectories>
       </AdditionalUsingDirectories>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)vendor;$(ProjectDir)vendor\yaml-cpp\include;$(ProjectDir)vendor\libzmq-v142-x64-4_3_4;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Glad\include\;$(ProjectDir)src;$(ProjectDir)vendor;$(ProjectDir)vendor\yaml-cpp\include;$(ProjectDir)vendor\libzmq-v142-x64-4_3_4;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libzmq-v142-mt-4_3_4.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;Glad.lib;libzmq-v142-mt-4_3_4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\lib\;$(SolutionDir)bin\$(Configuration)-$(Platform)\Glad\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /E /Y "$(ProjectDir)libsodium.dll" "$(TargetDir)"
@@ -342,7 +360,7 @@ xcopy /E /Y "$(ProjectDir)Subscriptions.txt" "$(TargetDir)"</Command>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINSOCK_DEPRECATED_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_CONSOLE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)vendor;$(ProjectDir)vendor\yaml-cpp\include;$(ProjectDir)vendor\libzmq-v142-x64-4_3_4;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Glad\include\;$(ProjectDir)src;$(ProjectDir)vendor;$(ProjectDir)vendor\yaml-cpp\include;$(ProjectDir)vendor\libzmq-v142-x64-4_3_4;%(AdditionalUsingDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -350,8 +368,8 @@ xcopy /E /Y "$(ProjectDir)Subscriptions.txt" "$(TargetDir)"</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libzmq-v142-mt-4_3_4.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;Glad.lib;libzmq-v142-mt-4_3_4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\lib\;$(SolutionDir)bin\$(Configuration)-$(Platform)\Glad\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /E /Y "$(ProjectDir)libsodium.dll" "$(TargetDir)"

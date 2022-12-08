@@ -1,12 +1,36 @@
 #include "ClientManager.h"
 
-#include <functional>
-#include <future>
 #include <iostream>
+
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
 
 #include <yaml-cpp/yaml.h>
 
+#include "ImGuiUtility.h"
 #include "Log.h"
+
+// Prepare our context and the ClientManager
+ClientManager::ClientManager() : m_ClientTerminated(false), m_PortManager(s_StaringPort, 20), m_Context(1), m_DataRefLogger("data.log")
+{
+    Log::Init();
+
+    LOG_INFO("Initializing Client Manager");
+}
+
+ClientManager::~ClientManager()
+{
+    m_DataRefLogger.close();
+    for (size_t i = 0; i < m_Publishers.size(); ++i) unbind(i);
+    for (size_t i = 0; i < m_Subscribers.size(); ++i) disconnect(i);
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
+    m_Running = false;
+}
 
 void ClientManager::receiverCallbackFloat(std::string dataref, float value)
 {
@@ -40,6 +64,69 @@ void ClientManager::terminateWriter(const std::string& topic)
     {
         m_Writer.IsCockpitFree = true;
         m_Writer.Topic.clear();
+    }
+}
+
+void ClientManager::logValueOfLabels(std::chrono::steady_clock::time_point& time)
+{
+    // Log Data
+    std::chrono::seconds secondsElasped = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - time);
+    if (secondsElasped.count() > (long long)m_LoggingFrequency)
+    {
+        time = std::chrono::steady_clock::now();
+        for (auto const& [label, tag] : m_LabelsToTag) m_DataRefLogger << getDataRef(label).Value << ", ";
+        m_DataRefLogger << std::endl;
+    }
+}
+
+void ClientManager::removeClients()
+{
+    // Remove topic
+    // Unbind and diconnect sockets used to communicate to disconnected clients
+    std::unique_lock lock(m_Mutex);
+    while (!m_ClientsToRemove.empty())
+    {
+        for (size_t i = 0; i < m_ClientTopics.size(); ++i)
+        {
+            if (m_ClientTopics[i] == m_ClientsToRemove.top().Topic)
+            {
+                m_ClientTopics.erase(m_ClientTopics.begin() + i);
+                break;
+            }
+        }
+        unbind(m_ClientsToRemove.top().Publisher);
+        disconnect(m_ClientsToRemove.top().Subscriber);
+
+        m_ClientsToRemove.pop();
+    }
+}
+
+void ClientManager::manageNewClients(size_t portPublisher, size_t subscriberOfClients, std::vector<std::future<void>>& threads)
+{
+    // Receive all parts of the message
+    std::vector<zmq::message_t> recv_msgs;
+    zmq::recv_result_t result = zmq::recv_multipart(m_Subscribers[subscriberOfClients], std::back_inserter(recv_msgs), zmq::recv_flags::dontwait);
+    if (result)
+    {
+        std::string topic = recv_msgs[0].to_string();
+
+        LOG_INFO("Received topic: {0} with command: {1}", topic, recv_msgs[1].to_string());
+
+        if (std::find(m_ClientTopics.begin(), m_ClientTopics.end(), topic) == m_ClientTopics.end())
+        {
+            m_ClientTopics.emplace_back(topic);
+
+            auto [newPublisher, newPublisherPort] = bind();
+            auto [newSubscriber, newSubscriberPort] = connect();
+
+            LOG_INFO("New client connected: {0} - on publishing port {1} and subscription port {2}", topic, newPublisherPort, newSubscriberPort);
+
+            m_Publishers[portPublisher].send(zmq::buffer(topic), zmq::send_flags::sndmore);
+            m_Publishers[portPublisher].send(zmq::buffer(std::to_string(newSubscriberPort)), zmq::send_flags::sndmore);
+            m_Publishers[portPublisher].send(zmq::buffer(std::to_string(newPublisherPort)));
+
+            threads.push_back(std::async(std::launch::async, &ClientManager::attachToClient, this, m_ClientTopics.back(), newPublisher, newSubscriber)); // push it back into the thread vector
+        }
     }
 }
 
@@ -166,74 +253,63 @@ void ClientManager::listenForClients()
     m_DataRefLogger << std::endl;
 
     std::chrono::steady_clock::time_point time = std::chrono::steady_clock::now();
-    while (m_Running)
+    while (m_Running && !glfwWindowShouldClose(m_Window->getGLFWWindow()))
     {
-        // Log Data
-        std::chrono::seconds secondsElasped = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - time);
-        if (secondsElasped.count() > (long long)m_LoggingFrequency)
-        {
-            time = std::chrono::steady_clock::now();
-            for (auto const& [label, tag] : m_LabelsToTag) m_DataRefLogger << getDataRef(label).Value << ", ";
-            m_DataRefLogger << std::endl;
-        }
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
 
-        // Remove topic
-        // Unbind and diconnect sockets used to communicate to disconnected clients
-        std::unique_lock lock(m_Mutex);
-        while (!m_ClientsToRemove.empty())
+        logValueOfLabels(time);
+        removeClients();
+        manageNewClients(portPublisher, subscriberOfClients, threads);
+
+        ImGuiUtility::createImGuiDockspace([&]()
         {
+            ImGui::Begin("Settings", nullptr, m_WindowFlags);
+            ImGuiUtility::drawImGuiLabelWithColumn("Tip:", [&]()
+                {
+                    ImGui::Text("%s", "CTRL + Click to turn the slider into an input");
+                }, 250.0f);
+            ImGuiUtility::drawImGuiLabelWithColumn("Column Width", [&]()
+                {
+                    ImGui::SliderFloat("##", &m_ColumnWidth, 100.0f, 400.0f);
+                }, 250.0f);
+            ImGui::End();
+
+            ImGui::Begin("Labels and Values", nullptr, m_WindowFlags);
+            for (auto const& [label, tag] : m_LabelsToTag)
+            {
+                const char* c_str_label = label.c_str();
+                const char* c_str_value = getDataRef(label).Value.c_str();
+                ImGuiUtility::drawImGuiLabelWithColumn(c_str_label, [&]()
+                    {
+                        ImGui::Text("%s", c_str_value);
+                    }, m_ColumnWidth);
+            }   
+            ImGui::End();
+
+            ImGui::Begin("Connected Clients", nullptr, m_WindowFlags);
             for (size_t i = 0; i < m_ClientTopics.size(); ++i)
             {
-                if (m_ClientTopics[i] == m_ClientsToRemove.top().Topic)
-                {
-                    m_ClientTopics.erase(m_ClientTopics.begin() + i);
-                    break;
-                }
+                const char* topic = m_ClientTopics[i].c_str();
+                const char* publisher = m_PublishersAddress[i].c_str();
+                const char* subscriber = m_SubscribersAddress[i].c_str();
+                ImGuiUtility::drawImGuiLabelWithColumn(topic, [&]()
+                    {
+                        ImGui::Text("%s: %s", "Publisher address", publisher);
+                        ImGui::Text("%s: %s", "Subscriber address", subscriber);
+                    }, m_ColumnWidth);
             }
-            unbind(m_ClientsToRemove.top().Publisher);
-            disconnect(m_ClientsToRemove.top().Subscriber);
+            ImGui::End();
+        });
 
-            m_ClientsToRemove.pop();
-        }
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        // Receive all parts of the message
-        std::vector<zmq::message_t> recv_msgs;
-        zmq::recv_result_t result = zmq::recv_multipart(m_Subscribers[subscriberOfClients], std::back_inserter(recv_msgs), zmq::recv_flags::dontwait);
-        if (!result) continue;
-
-        std::string topic = recv_msgs[0].to_string();
-
-        LOG_INFO("Received topic: {0} with command: {1}", topic, recv_msgs[1].to_string());
-    
-        if (std::find(m_ClientTopics.begin(), m_ClientTopics.end(), topic) == m_ClientTopics.end())
-        {
-            m_ClientTopics.emplace_back(topic);
-
-            auto [newPublisher, newPublisherPort] = bind();
-            auto [newSubscriber, newSubscriberPort] = connect();
-
-            LOG_INFO("New client connected: {0} - on publishing port {1} and subscription port {2}", topic, newPublisherPort, newSubscriberPort);
-
-            m_Publishers[portPublisher].send(zmq::buffer(topic), zmq::send_flags::sndmore);
-            m_Publishers[portPublisher].send(zmq::buffer(std::to_string(newSubscriberPort)), zmq::send_flags::sndmore);
-            m_Publishers[portPublisher].send(zmq::buffer(std::to_string(newPublisherPort)));
-            
-            threads.push_back(std::async(std::launch::async, &ClientManager::attachToClient, this, m_ClientTopics.back(), newPublisher, newSubscriber)); // push it back into the thread vector
-        }
+        m_Window->onUpdate();
     }
     
     LOG_INFO("Terminating Listener");
-}
-
-// Prepare our context and the ClientManager
-ClientManager::ClientManager() : m_ClientTerminated(false), m_PortManager(s_StaringPort, 20), m_Context(1), m_DataRefLogger("data.log")
-{
-    LOG_INFO("Initializing Client Manager");
-}
-
-ClientManager::~ClientManager()
-{
-    terminate();
 }
 
 void ClientManager::run()
@@ -281,18 +357,9 @@ void ClientManager::run()
         
     }
 
+    createWindow();
     listenForClients();
     m_ClientTerminated = true;
-}
-
-bool ClientManager::terminate()
-{
-    m_DataRefLogger.close();
-    for (size_t i = 0; i < m_Publishers.size(); ++i) unbind(i);
-    for (size_t i = 0; i < m_Subscribers.size(); ++i) disconnect(i);
-
-    m_Running = false;
-    return m_ClientTerminated;
 }
 
 size_t ClientManager::storeInDeque(zmq::socket_type socket_type, std::vector<size_t>& free, 
@@ -369,6 +436,30 @@ void ClientManager::disconnect(size_t subscriber_index)
     m_Subscribers[subscriber_index].disconnect(m_SubscribersAddress[subscriber_index]);
     m_PortManager.liberatePort(m_SubscriberPorts[subscriber_index]);
     m_UnusedSubscribers.emplace_back(subscriber_index);
+}
+
+void ClientManager::createWindow()
+{
+    m_Window = std::unique_ptr<Window>(Window::Create({ m_ApplicationName, 1080, 720 }));
+
+    if (m_Window->getStatus() == 0) LOG_ERROR("Glad Init Error!");
+
+#ifdef _DEBUG
+    LOG_INFO("OpenGL version: {0}", glGetString(GL_VERSION));
+#endif
+
+    const char* glsl_version = "#version 130";
+    ImGui::CreateContext();
+    ImGui_ImplGlfw_InitForOpenGL(m_Window->getGLFWWindow(), true);
+    ImGui_ImplOpenGL3_Init(glsl_version);
+    ImGui::StyleColorsDark();
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+    //m_WindowFlags |= ImGuiWindowFlags_NoMove;
+    m_WindowFlags |= ImGuiWindowFlags_NoBackground;
+    m_WindowFlags |= ImGuiWindowFlags_NoCollapse;
 }
 
 int ClientManager::readDataRefsFromFile(const std::string& fileName, std::unordered_map<std::string, int>& map)

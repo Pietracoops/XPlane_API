@@ -8,6 +8,7 @@
 
 #include <chrono>
 #include <deque>
+#include <future>
 #include <shared_mutex>
 #include <stack>
 #include <string>
@@ -15,11 +16,16 @@
 #include <vector>
 #include <regex>
 
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
+
 #include "zmq.hpp"
 #include "zmq_addon.hpp"
 
 #include "PortManager.h"
 
+#include "Window.h"
 #include "XPlaneBeaconListener.h"
 #include "XPlaneUDPClient.h"
 #include "XPUtils.h"
@@ -92,6 +98,12 @@ private:
 	unsigned int m_LoggingFrequency = 10;
 	std::ofstream m_DataRefLogger;
 
+	std::unique_ptr<Window> m_Window;
+	ImGuiWindowFlags m_WindowFlags;
+
+	const char* m_ApplicationName = "PilotAI API GUI";
+	float m_ColumnWidth = 250.0f;
+
 public:
 	ClientManager();
 	~ClientManager();
@@ -101,8 +113,11 @@ public:
 	bool terminate();
 
 private:
-	void listenForClients();
+	void logValueOfLabels(std::chrono::steady_clock::time_point& time);
+	void removeClients();
+	void manageNewClients(size_t portPublisher, size_t subscriberOfClients, std::vector<std::future<void>>& threads);
 	void attachToClient(std::string topic, size_t publisher_index, size_t subscriber_index);
+	void listenForClients();
 
 	void receiverCallbackFloat(std::string dataref, float value);
 	void receiverCallbackString(std::string dataref, std::string value);
@@ -130,5 +145,6 @@ private:
 
 	void disconnect(size_t subscriber_index);
 
+	void createWindow();
 };
 #endif /* CLIENTMANAGER_SRC_CLIENTMANAGER_H_ */

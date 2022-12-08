@@ -4,6 +4,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.31321.278
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libXplane-udp-client", "libXplane-udp-client\libXplane-udp-client.vcxproj", "{0387D409-1DB7-402A-83EF-F56D67F1B692}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4B22A08A-EB7A-48A1-9E0F-8E1F7C8E2CC1} = {4B22A08A-EB7A-48A1-9E0F-8E1F7C8E2CC1}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Glad", "Glad\Glad.vcxproj", "{4B22A08A-EB7A-48A1-9E0F-8E1F7C8E2CC1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +26,14 @@ Global
 		{0387D409-1DB7-402A-83EF-F56D67F1B692}.Release|x64.Build.0 = Release|x64
 		{0387D409-1DB7-402A-83EF-F56D67F1B692}.Release|x86.ActiveCfg = Release|Win32
 		{0387D409-1DB7-402A-83EF-F56D67F1B692}.Release|x86.Build.0 = Release|Win32
+		{4B22A08A-EB7A-48A1-9E0F-8E1F7C8E2CC1}.Debug|x64.ActiveCfg = Debug|x64
+		{4B22A08A-EB7A-48A1-9E0F-8E1F7C8E2CC1}.Debug|x64.Build.0 = Debug|x64
+		{4B22A08A-EB7A-48A1-9E0F-8E1F7C8E2CC1}.Debug|x86.ActiveCfg = Debug|Win32
+		{4B22A08A-EB7A-48A1-9E0F-8E1F7C8E2CC1}.Debug|x86.Build.0 = Debug|Win32
+		{4B22A08A-EB7A-48A1-9E0F-8E1F7C8E2CC1}.Release|x64.ActiveCfg = Release|x64
+		{4B22A08A-EB7A-48A1-9E0F-8E1F7C8E2CC1}.Release|x64.Build.0 = Release|x64
+		{4B22A08A-EB7A-48A1-9E0F-8E1F7C8E2CC1}.Release|x86.ActiveCfg = Release|Win32
+		{4B22A08A-EB7A-48A1-9E0F-8E1F7C8E2CC1}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

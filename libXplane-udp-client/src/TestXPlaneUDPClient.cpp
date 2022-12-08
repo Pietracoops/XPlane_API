@@ -22,15 +22,12 @@ BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
 int main() {
 
 	// ENTRY POINT
-	Log::Init();
-
 	ClientManager server;
 	
 	if (FALSE == SetConsoleCtrlHandler(ConsoleHandlerRoutine, TRUE)) { }
 
 	server.run();
 
-	server.terminate();
 	std::cout << "Server terminated..." << std::endl;
 
 	return 1;
